@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.dreamslab.screen'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "org.dreamslab.screen"
+        minSdk 24
+        targetSdk 34
+        versionCode Integer.parseInt(System.getenv("BUILD_NUMBER") ?: "1")
+        versionName "1.0." + (System.getenv("BUILD_NUMBER") ?: "1")
+    }
+
+    signingConfigs {
+        // A fixed key kept in the repo so every new build installs over the old one
+        // without losing photos, clips, music or settings.
+        screen {
+            storeFile file('screen.keystore')
+            storePassword "dreamsscreen"
+            keyAlias "screen"
+            keyPassword "dreamsscreen"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.screen
+        }
+        debug {
+            signingConfig signingConfigs.screen
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

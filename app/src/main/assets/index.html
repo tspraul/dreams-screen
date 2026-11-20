@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DREAMS Screen</title>
+<style>
+/* One full-screen stage: challenge → kids' photos → one how-to clip, looping.
+   Bottom bar: Snap, music. Clean-up takes over the screen at set times.
+   Setup opens by holding the clock (top left) for 3 seconds. System fonts only (works offline in China). */
+:root{
+  --bg:#14203A; --panel:#1E2D4F; --line:#34477A; --ink:#F8FAFC; --muted:#A9B6D3;
+  --orange:#F97316; --zh:#FDE68A; --red:#EF4444; --green:#22C55E;
+  --sans:Roboto,"Noto Sans CJK SC","Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.zh{color:var(--zh)}
+
+.stage{position:absolute;inset:0 0 9vh 0;overflow:hidden}
+.slide{position:absolute;inset:0;opacity:0;transition:opacity .8s;display:flex}
+.slide.on{opacity:1}
+
+/* challenge */
+.ch{padding:5vh 4vw 3vh;gap:3vw}
+.ch-main{flex:1.35;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2.2vh}
+.band{align-self:flex-start;background:var(--orange);color:#fff;border-radius:1.2vh;padding:.6vh 1.6vw;font-weight:900;font-size:3vw;letter-spacing:.04em;display:flex;gap:1.2vw}
+.band .zh{color:#fff;letter-spacing:0}
+.title{font-size:6.2vw;font-weight:900;line-height:1;margin:0}
+.title-zh{font-size:3.6vw;font-weight:700;line-height:1.2}
+.q{font-size:2.5vw;font-weight:700}
+.q .zh{color:var(--muted);margin-left:.8vw}
+.ideas{display:flex;flex-wrap:wrap;gap:1vw;margin-top:1vh}
+.ideas-label{width:100%;font-size:1.4vw;color:var(--muted);font-weight:700}
+.idea{background:var(--panel);border:2px solid var(--line);border-radius:1.4vh;padding:1vh 1.4vw;display:flex;flex-direction:column;line-height:1.15}
+.idea b{font-size:2.1vw}
+.idea span{font-size:1.5vw;color:var(--zh)}
+.ch-side{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1.4vh}
+.ch-side h3{margin:0;font-size:2vw}
+.ch-side h3 .zh{margin-left:.6vw;font-weight:700}
+.mosaic{display:grid;grid-template-columns:1fr 1fr;gap:1vw;flex:none;align-items:start}
+.mosaic img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:1vh;background:var(--panel);display:block;flex:none}
+.mosaic img.big{grid-column:span 2;aspect-ratio:16/9}
+.side-empty{border:3px dashed var(--line);border-radius:1.6vh;padding:4vh 2vw;color:var(--muted);font-size:1.8vw;font-weight:700;line-height:1.35}
+
+/* photo + clip */
+.media{background:#0B1222;align-items:center;justify-content:center}
+.media img,.media video{width:100%;height:100%;object-fit:contain;display:block;background:#0B1222}
+.cap{position:absolute;left:0;right:0;bottom:0;padding:2vh 3vw;background:linear-gradient(transparent,rgba(11,18,34,.92));display:flex;align-items:baseline;gap:1.2vw;font-weight:900;font-size:2.8vw}
+.cap .zh{font-size:.8em;font-weight:700}
+.cap .tag{margin-left:auto;font-size:.5em;color:var(--muted);font-weight:700}
+.cap.top{top:0;bottom:auto;background:linear-gradient(rgba(11,18,34,.92),transparent)}
+
+/* clock + pre-cleanup chip */
+.clock{position:absolute;top:1.6vh;left:1.6vw;z-index:6;font-size:1.8vw;font-weight:700;color:var(--muted);padding:.6vh 1vw;border-radius:1vh;background:rgba(20,32,58,.6)}
+.chip{position:absolute;top:1.6vh;right:1.6vw;z-index:6;background:var(--panel);border:3px solid var(--orange);border-radius:2vh;padding:1vh 1.6vw;text-align:right;line-height:1.05}
+.chip small{display:block;font-size:1.4vw;color:var(--muted);font-weight:700}
+.chip strong{font-size:4vw;color:var(--orange);font-variant-numeric:tabular-nums}
+
+/* bottom bar */
+.bar{position:absolute;left:0;right:0;bottom:0;height:9vh;background:#0F1930;border-top:1px solid var(--line);display:flex;align-items:center;gap:1.2vw;padding:0 1.6vw}
+.bbtn{height:6.4vh;border-radius:1.4vh;border:2px solid var(--line);background:var(--panel);padding:0 1.6vw;font-size:2vw;font-weight:800;display:flex;align-items:center;gap:.8vw;white-space:nowrap}
+.bbtn .zh{font-weight:700;font-size:.85em}
+.bbtn.snap{background:var(--orange);border-color:var(--orange);color:#fff}
+.bbtn.snap .zh{color:#fff}
+.bbtn svg{width:3vh;height:3vh;flex:none}
+.song{flex:1;min-width:0;color:var(--muted);font-size:1.4vw;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bbtn.clean{border-color:var(--orange);color:#FDBA74}
+
+/* full-screen layers */
+.layer{position:absolute;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;text-align:center;padding:3vh 3vw}
+.clean h2{margin:0;font-size:8vw;line-height:.9;font-weight:900;color:var(--orange)}
+.clean .zh2{font-size:4vw;font-weight:700;color:var(--zh)}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.4vw;width:92vw;margin-top:1vh}
+.step{background:var(--panel);border-radius:2vh;padding:2.4vh 1vw;display:flex;flex-direction:column;align-items:center;gap:.6vh}
+.step em{font-style:normal;font-size:3.6vw;font-weight:900;color:var(--orange);line-height:1}
+.step b{font-size:2.4vw;line-height:1.05}
+.step span{font-size:1.7vw;color:var(--zh);font-weight:700}
+.lineup{display:flex;align-items:baseline;gap:1.6vw;margin-top:1.6vh}
+.lineup .l{font-size:3vw;font-weight:800}
+.lineup .l .zh{margin-left:.8vw;font-weight:700}
+.lineup strong{font-size:9vw;font-weight:900;color:var(--orange);font-variant-numeric:tabular-nums;line-height:.9}
+.skip{position:absolute;right:2vw;bottom:2vh;background:transparent;border:2px solid var(--line);color:var(--muted);border-radius:1.2vh;padding:1vh 1.4vw;font-size:1.4vw;font-weight:700}
+.lineup-now h2{color:var(--green)}
+
+/* snap */
+.cam{background:#000;gap:0;padding:0}
+.cam video,.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.cam video{transform:scaleX(-1)}
+.cam .count{position:relative;z-index:2;font-size:22vw;font-weight:900;color:#fff;text-shadow:0 0 4vh rgba(0,0,0,.6)}
+.cam .hintc{position:absolute;top:3vh;left:0;right:0;z-index:2;font-size:2.6vw;font-weight:800;text-shadow:0 0 2vh #000}
+.cam .hintc .zh{margin-left:1vw}
+.cam .row{position:absolute;bottom:4vh;left:0;right:0;z-index:2;display:flex;gap:2vw;justify-content:center}
+.big{height:10vh;border-radius:2vh;border:0;padding:0 3vw;font-size:2.6vw;font-weight:900;background:var(--panel)}
+.big.go{background:var(--orange);color:#fff}
+.big.ok{background:var(--green);color:#fff}
+.big .zh{font-weight:700;margin-left:.6vw;color:inherit;opacity:.9}
+
+/* setup */
+.setup{position:absolute;inset:0;z-index:40;background:#0F1930;overflow:auto;padding:3vh 4vw 6vh;font-size:20px;-webkit-user-select:text;user-select:text}
+.setup h1{margin:0 0 1vh;font-size:34px}
+.setup h2{margin:28px 0 8px;font-size:26px;border-top:1px solid var(--line);padding-top:20px}
+.setup p.hint{color:var(--muted);margin:0 0 12px;font-size:18px;line-height:1.4}
+.top{display:flex;align-items:center;gap:16px}
+.top .grow{flex:1}
+.btn{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:12px 20px;font-size:20px;font-weight:800}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.danger{border-color:var(--red);color:#FCA5A5}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.card{background:var(--panel);border:3px solid var(--line);border-radius:14px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px}
+.card b{font-size:21px}
+.card span{color:var(--zh);font-size:18px}
+.card.on{border-color:var(--orange);background:#2A2440}
+.card.on::after{content:"Showing now ✓";color:var(--orange);font-weight:800;font-size:16px}
+.times{display:flex;flex-direction:column;gap:10px}
+.trow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--panel);border-radius:12px;padding:12px 16px}
+.trow b{min-width:140px}
+.trow input[type=time]{font:inherit;font-size:22px;background:#0F1930;color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:6px 10px;color-scheme:dark}
+.trow label{display:flex;align-items:center;gap:8px}
+.trow input[type=checkbox]{width:26px;height:26px}
+.msg{color:var(--muted);font-size:18px;margin-top:8px;min-height:1.2em}
+.msg.err{color:#FCA5A5}.msg.ok{color:#86EFAC}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.th{position:relative}
+.th img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;display:block;background:var(--panel)}
+.x{position:absolute;top:6px;right:6px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.7);font-size:22px;font-weight:800}
+.x.armed{background:var(--red)}
+.files{display:flex;flex-direction:column;gap:8px}
+.file{display:flex;align-items:center;gap:12px;background:var(--panel);border-radius:10px;padding:10px 14px}
+.file .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file .x{position:static;flex:none}
+.vol{display:flex;align-items:center;gap:14px}
+.vol input{width:320px;max-width:60vw;height:30px}
+.small{font-size:16px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="slide ch on" id="sChallenge">
+    <div class="ch-main">
+      <div class="band"><span>RECESS CHALLENGE</span><span class="zh">课间挑战</span></div>
+      <h1 class="title" id="tEn"></h1>
+      <div class="title-zh zh" id="tZh"></div>
+      <div class="q"><span id="qEn"></span><span class="zh" id="qZh"></span></div>
+      <div class="ideas" id="ideas"></div>
+    </div>
+    <div class="ch-side" id="side"></div>
+  </div>
+  <div class="slide media" id="sPhoto">
+    <img id="phImg" alt="">
+    <div class="cap"><span>What you made</span><span class="zh">你们的作品</span><span class="tag" id="phTag"></span></div>
+  </div>
+  <div class="slide media" id="sClip">
+    <video id="clipVid" muted playsinline preload="auto"></video>
+    <div class="cap top"><span>How to</span><span id="clipEn"></span><span class="zh" id="clipZh"></span></div>
+  </div>
+</div>
+
+<div class="clock" id="clock">--:--</div>
+<div class="chip" id="chip" hidden><small id="chipLbl">Clean-up at 11:52</small><strong id="chipTime">0:00</strong></div>
+
+<div class="bar">
+  <button class="bbtn snap" id="snapBtn" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg>
+    Snap your build <span class="zh">拍作品</span></button>
+  <button class="bbtn" id="playBtn" type="button" aria-label="Play or pause music">
+    <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5v14l12-7z"/></svg>
+    <span id="playLbl">Music</span> <span class="zh">音乐</span></button>
+  <button class="bbtn" id="nextBtn" type="button" aria-label="Next song">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 5v14l10-7zM16 5h3v14h-3z"/></svg></button>
+  <div class="song" id="song"></div>
+  <button class="bbtn clean" id="cleanNowBtn" type="button">Clean up now <span class="zh">收拾</span></button>
+</div>
+
+<!-- clean-up -->
+<div class="layer clean" id="clean" hidden>
+  <h2>Clean up!</h2>
+  <div class="zh2">收拾干净</div>
+  <div class="steps">
+    <div class="step"><em>1</em><b>Not done? Save it.</b><span>没做完？保存起来</span></div>
+    <div class="step"><em>2</em><b>Tools back</b><span>工具放回原位</span></div>
+    <div class="step"><em>3</em><b>Trash in the bin</b><span>垃圾扔进垃圾桶</span></div>
+    <div class="step"><em>4</em><b>Sweep the table</b><span>用刷子扫干净桌子</span></div>
+  </div>
+  <div class="lineup"><span class="l">Line up in<span class="zh">排队倒计时</span></span><strong id="lineTime">8:00</strong></div>
+  <button class="skip" id="skipBtn" type="button">Teacher: hide 隐藏</button>
+</div>
+<div class="layer clean lineup-now" id="lineNow" hidden>
+  <h2>Line up now!</h2>
+  <div class="zh2">现在排队！</div>
+  <button class="skip" id="lineOkBtn" type="button">Teacher: hide 隐藏</button>
+</div>
+
+<!-- snap -->
+<div class="layer cam" id="cam" hidden>
+  <video id="camVid" playsinline muted autoplay></video>
+  <img id="camShot" alt="Your photo" hidden>
+  <div class="hintc" id="camHint">Hold your build up to the camera <span class="zh">把作品举到摄像头前</span></div>
+  <div class="count" id="camCount"></div>
+  <div class="row" id="camRowLive">
+    <button class="big go" id="camTake" type="button">Take photo <span class="zh">拍照</span></button>
+    <button class="big" id="camCancel" type="button">Cancel <span class="zh">取消</span></button>
+  </div>
+  <div class="row" id="camRowShot" hidden>
+    <button class="big ok" id="camKeep" type="button">Keep it <span class="zh">保留</span></button>
+    <button class="big" id="camAgain" type="button">Try again <span class="zh">重拍</span></button>
+  </div>
+</div>
+
+<!-- setup -->
+<div class="setup" id="setup" hidden>
+  <div class="top"><h1 class="grow">Screen setup</h1><button class="btn primary" id="closeSetup" type="button">Done</button></div>
+  <p class="hint">Everything here is tap-to-choose. You never need to type Chinese.</p>
+
+  <h2>1. This week's challenge</h2>
+  <p class="hint">Tap one. It shows on the screen right away.</p>
+  <div class="cards" id="cards"></div>
+
+  <h2>2. Clean-up times (Monday to Friday)</h2>
+  <p class="hint">At the clean-up time, the music stops and the screen shows the clean-up steps with a countdown to line-up time.</p>
+  <div class="times" id="times"></div>
+
+  <h2>3. Add clips, music or photos from a USB stick</h2>
+  <p class="hint">Put files in a folder called <b>DREAMS Screen</b> on the stick. Plug the stick into the screen, then tap the orange button. The first time, pick the DREAMS Screen folder and tap <b>Use this folder</b> (or <b>Allow</b>).<br>
+  Videos become how-to clips, songs go in the music list, pictures go in the photos.</p>
+  <div class="top" style="flex-wrap:wrap">
+    <button class="btn primary" id="usbBtn" type="button">Copy from USB stick</button>
+    <button class="btn" id="usbPickBtn" type="button">Pick a different folder</button>
+  </div>
+  <div class="msg" id="usbMsg"></div>
+
+  <h2>4. Photos</h2>
+  <p class="hint">Photos delete themselves after 4 weeks. To remove one now, tap ✕ twice.</p>
+  <div class="thumbs" id="thumbs"></div>
+
+  <h2>5. How-to clips</h2>
+  <p class="hint">Silent videos, 15 to 60 seconds. One plays after each round of photos. Tap ✕ twice to remove.</p>
+  <div class="files" id="clipList"></div>
+
+  <h2>6. Music</h2>
+  <div class="vol"><span>Volume</span><input type="range" id="vol" min="0" max="100" step="5"><span id="volVal"></span></div>
+  <div class="files" id="musicList" style="margin-top:12px"></div>
+
+  <p class="small" style="margin-top:28px" id="ver"></p>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const S = window.DreamsApp && typeof window.DreamsApp.list === 'function' ? window.DreamsApp : null; // the app; null in a desktop preview
+const media = kind => name => 'https://dreams.local/media/' + kind + '/' + encodeURIComponent(name);
+const photoUrl = media('photos'), clipUrl = media('clips');
+
+/* ---------- challenges (English + Chinese written in advance) ---------- */
+const CHALLENGES = [
+  {id:'roll',  en:'Build something that rolls.', zh:'做一个会滚的东西', qEn:'How far can it go?', qZh:'它能滚多远？',
+   ideas:[['Wheels','轮子'],['Tubes','纸筒'],['Ramps','斜坡']]},
+  {id:'tower', en:'Build the tallest tower you can.', zh:'搭一座最高的塔', qEn:'Can it stand by itself?', qZh:'它能自己站稳吗？',
+   ideas:[['Wide bottom','宽底座'],['Triangles','三角形'],['Fold the paper','把纸折起来']]},
+  {id:'bridge',en:'Build a bridge for a toy car.', zh:'给玩具车搭一座桥', qEn:'How much can it hold?', qZh:'它能承受多重？',
+   ideas:[['Folds','折痕'],['Arches','拱形'],['Supports','支柱']]},
+  {id:'fall',  en:'Make something that falls slowly.', zh:'做一个慢慢落下的东西', qEn:'How slow can it fall?', qZh:'它能落得多慢？',
+   ideas:[['Parachute','降落伞'],['Wings','翅膀'],['Spinner','旋转']]},
+  {id:'air',   en:'Make something the wind can push.', zh:'做一个能被风推动的东西', qEn:'How far can air push it?', qZh:'风能把它推多远？',
+   ideas:[['Sails','帆'],['Straws','吸管'],['Wheels','轮子']]},
+  {id:'move',  en:'Make a creature that moves.', zh:'做一个会动的小动物', qEn:'How does it move?', qZh:'它是怎么动的？',
+   ideas:[['Brads','两脚钉'],['Strings','拉线'],['Folds','折叠']]},
+  {id:'home',  en:'Build a home for a tiny animal.', zh:'给小动物建一个家', qEn:'What does it need?', qZh:'它需要什么？',
+   ideas:[['Door','门'],['Roof','屋顶'],['Bed','床']]},
+  {id:'wear',  en:'Make a hat or mask you can wear.', zh:'做一顶能戴的帽子或面具', qEn:'Does it stay on?', qZh:'能戴稳吗？',
+   ideas:[['Paper bands','纸带'],['Tape','胶带'],['Shapes','形状']]},
+  {id:'sound', en:'Make something that makes music.', zh:'做一个能发出音乐的东西', qEn:'Can it play high and low?', qZh:'能发出高音和低音吗？',
+   ideas:[['Rubber bands','橡皮筋'],['Boxes','盒子'],['Tubes','纸筒']]},
+  {id:'join',  en:'Join two things in a new way.', zh:'用新方法把两样东西连起来', qEn:'Can it bend or turn?', qZh:'它能弯或转吗？',
+   ideas:[['Slots','插口'],['Brads','两脚钉'],['Tie','绑']]},
+  {id:'free',  en:'Make anything you want!', zh:'想做什么就做什么！', qEn:'What will you make today?', qZh:'你今天要做什么？',
+   ideas:[['Cardboard','纸板'],['Tape','胶带'],['Your idea','你的想法']]}
+];
+
+/* how-to clip titles: name the video file with one of these and the Chinese appears */
+const CLIP_ZH = {
+  'hot glue':'热熔胶','glue gun':'热熔胶枪','glue':'胶水','tape':'胶带','masking tape':'美纹纸胶带',
+  'ways to join':'连接方法','slot':'插口','slots':'插口','brad':'两脚钉','brads':'两脚钉','staple':'订书钉','stapler':'订书机',
+  'tie':'绑','scissors':'剪刀','cutting cardboard':'剪纸板','cardboard':'纸板','cardboard cutter':'纸板刀',
+  'saw':'锯子','drill':'电钻','hammer':'锤子','sandpaper':'砂纸','screwdriver':'螺丝刀',
+  'sewing':'缝纫','needle and thread':'针和线','clean up':'收拾','save your project':'保存作品','save it':'保存作品',
+  'bee-bot':'小蜜蜂机器人','dash':'Dash机器人','robots':'机器人','circuits':'电路','led':'LED灯','coin cell':'纽扣电池',
+  '3d printing':'3D打印','strong shapes':'坚固的形状','triangles':'三角形','wheels':'轮子'
+};
+function clipTitle(name){
+  const base = name.replace(/\.[^.]+$/,'').replace(/^[\d\s._-]+/,'').replace(/[_]+/g,' ').trim();
+  const zh = CLIP_ZH[base.toLowerCase()] || '';
+  return {en: base.charAt(0).toUpperCase() + base.slice(1), zh};
+}
+
+/* ---------- settings (kept on this screen) ---------- */
+const DEFAULTS = {
+  challenge:'roll',
+  times:[
+    {id:'g2',  label:'Grade 2',   start:'11:52', end:'12:00', on:true},
+    {id:'g35', label:'Grades 3–5', start:'12:23', end:'12:30', on:true}
+  ],
+  photoSec:8, challengeSec:20, volume:50, skipped:{}
+};
+let cfg = load();
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem('dreamsScreen')||'null'); if(s) return Object.assign({}, DEFAULTS, s); }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULTS));
+}
+function save(){ try{ localStorage.setItem('dreamsScreen', JSON.stringify(cfg)); }catch(e){} }
+
+/* ---------- media list ---------- */
+let lib = {photos:[], clips:[], music:[]};
+function refresh(){
+  if (S) { try{ lib = JSON.parse(S.list()); }catch(e){} }
+  renderChallenge();
+  if (!$('setup').hidden) renderSetup();
+}
+
+/* ---------- challenge slide ---------- */
+function current(){ return CHALLENGES.find(c => c.id === cfg.challenge) || CHALLENGES[0]; }
+function renderChallenge(){
+  const c = current();
+  $('tEn').textContent = c.en; $('tZh').textContent = c.zh;
+  $('qEn').textContent = c.qEn; $('qZh').textContent = c.qZh;
+  const box = $('ideas'); box.replaceChildren();
+  const lab = document.createElement('div'); lab.className='ideas-label'; lab.textContent='Ideas to try 试试这些'; box.append(lab);
+  c.ideas.forEach(([en,zh]) => { const d=document.createElement('div'); d.className='idea';
+    const b=document.createElement('b'); b.textContent=en; const s=document.createElement('span'); s.textContent=zh; d.append(b,s); box.append(d); });
+  const side = $('side'); side.replaceChildren();
+  const h = document.createElement('h3'); h.textContent='What you made'; const z=document.createElement('span'); z.className='zh'; z.textContent='你们的作品'; h.append(z); side.append(h);
+  if (!lib.photos.length){
+    const e=document.createElement('div'); e.className='side-empty';
+    e.textContent='Tap "Snap your build" to add your project here. 点“拍作品”，把你的作品放到这里。';
+    side.append(e);
+  } else {
+    const m=document.createElement('div'); m.className='mosaic';
+    lib.photos.slice(0,3).forEach((p,i)=>{ const im=document.createElement('img'); im.src=photoUrl(p.name); im.alt=''; if(!i) im.className='big'; m.append(im); });
+    side.append(m);
+  }
+}
+
+/* ---------- loop: challenge → photos → one clip ---------- */
+const MAX_PHOTOS = 12;
+let seq = [], pos = 0, loopT = null, clipTurn = 0, paused = false;
+function buildSeq(){
+  seq = [{t:'challenge'}];
+  lib.photos.slice(0, MAX_PHOTOS).forEach(p => seq.push({t:'photo', name:p.name}));
+  if (lib.clips.length){ seq.push({t:'clip', name: lib.clips[clipTurn % lib.clips.length].name}); clipTurn++; }
+}
+function showSlide(which){
+  ['sChallenge','sPhoto','sClip'].forEach(id => $(id).classList.toggle('on', id === which));
+}
+function step(){
+  clearTimeout(loopT);
+  if (paused) return;
+  if (pos >= seq.length || !seq.length){ refresh(); buildSeq(); pos = 0; }
+  const it = seq[pos++];
+  const vid = $('clipVid');
+  if (it.t !== 'clip'){ try{ vid.pause(); }catch(e){} vid.removeAttribute('src'); }
+  if (it.t === 'challenge'){
+    showSlide('sChallenge');
+    loopT = setTimeout(step, cfg.challengeSec*1000);
+  } else if (it.t === 'photo'){
+    const img = $('phImg');
+    img.onerror = () => { clearTimeout(loopT); step(); };
+    img.src = photoUrl(it.name);
+    const n = seq.filter(s => s.t==='photo').length, k = seq.slice(0,pos).filter(s => s.t==='photo').length;
+    $('phTag').textContent = k + ' / ' + n;
+    showSlide('sPhoto');
+    loopT = setTimeout(step, cfg.photoSec*1000);
+  } else {
+    const t = clipTitle(it.name);
+    $('clipEn').textContent = t.en; $('clipZh').textContent = t.zh;
+    vid.onended = () => { clearTimeout(loopT); step(); };
+    vid.onerror = () => { clearTimeout(loopT); step(); };
+    vid.src = clipUrl(it.name);
+    vid.currentTime = 0;
+    const p = vid.play(); if (p && p.catch) p.catch(()=>{});
+    showSlide('sClip');
+    loopT = setTimeout(step, 120000); // safety: never stay on one clip more than 2 minutes
+  }
+}
+function pauseLoop(){ paused = true; clearTimeout(loopT); try{ $('clipVid').pause(); }catch(e){} }
+function resumeLoop(){ if(!paused) return; paused = false; step(); }
+
+/* ---------- clock + clean-up schedule ---------- */
+const pad = n => String(n).padStart(2,'0');
+const fmt = s => Math.floor(s/60) + ':' + pad(s%60);
+const today = () => { const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); };
+function at(hhmm){ const [h,m] = String(hhmm||'0:0').split(':').map(Number); const d=new Date(); d.setHours(h||0, m||0, 0, 0); return d.getTime(); }
+let active = null;   // {id, end, manual}
+let lineUntil = 0;
+function isSkipped(id){ return (cfg.skipped[today()]||[]).includes(id); }
+function skip(id){ const d=today(); cfg.skipped = {[d]:[...(cfg.skipped[d]||[]), id]}; save(); }
+
+function tick(){
+  const now = Date.now(), d = new Date();
+  $('clock').textContent = d.getHours() + ':' + pad(d.getMinutes());
+  const weekday = d.getDay() >= 1 && d.getDay() <= 5;
+
+  // automatic clean-ups
+  if (!active && weekday){
+    for (const t of cfg.times){
+      if (!t.on || isSkipped(t.id)) continue;
+      const s = at(t.start), e = at(t.end);
+      if (e > s && now >= s && now < e){ startClean(t.id, e, false); break; }
+    }
+  }
+  // pre-clean-up chip: 3 minutes ahead
+  let next = null;
+  if (!active && weekday){
+    for (const t of cfg.times){
+      if (!t.on || isSkipped(t.id)) continue;
+      const s = at(t.start);
+      if (s > now && s - now <= 180000 && (!next || s < next.s)) next = {s, t};
+    }
+  }
+  $('chip').hidden = !next;
+  if (next){ $('chipLbl').textContent = 'Clean-up at ' + next.t.start + ' 收拾时间'; $('chipTime').textContent = fmt(Math.ceil((next.s-now)/1000)); }
+
+  if (active){
+    const left = Math.ceil((active.end - now)/1000);
+    if (left <= 0){
+      $('clean').hidden = true; $('lineNow').hidden = false;
+      chime(3); lineUntil = now + 120000; active = null;
+    } else {
+      $('lineTime').textContent = fmt(left);
+    }
+  }
+  if (lineUntil && now > lineUntil){ endLine(); }
+}
+function startClean(id, end, manual){
+  active = {id, end, manual};
+  $('cleanNowBtn').hidden = true;
+  closeCam();
+  try{ S && S.musicStop(); }catch(e){}
+  updateMusic();
+  pauseLoop();
+  $('lineNow').hidden = true; $('clean').hidden = false;
+  $('lineTime').textContent = fmt(Math.ceil((end-Date.now())/1000));
+  chime(2);
+}
+function endClean(){
+  if (active && !active.manual) skip(active.id);
+  active = null; lineUntil = 0;
+  $('clean').hidden = true; $('lineNow').hidden = true; $('cleanNowBtn').hidden = false;
+  resumeLoop();
+}
+function endLine(){ lineUntil = 0; $('lineNow').hidden = true; $('cleanNowBtn').hidden = false; resumeLoop(); }
+$('skipBtn').addEventListener('click', endClean);
+$('lineOkBtn').addEventListener('click', endLine);
+$('cleanNowBtn').addEventListener('click', () => startClean('manual', Date.now() + 7*60000, true));
+
+/* chime with WebAudio (no sound file needed) */
+let actx = null;
+function chime(n){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if (actx.resume) actx.resume();
+    const t0 = actx.currentTime;
+    for (let i=0;i<n;i++){
+      [784,1047].forEach((f,j) => {
+        const o=actx.createOscillator(), g=actx.createGain(), t=t0+i*0.9+j*0.22;
+        o.type='sine'; o.frequency.value=f; o.connect(g); g.connect(actx.destination);
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.5,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.7);
+        o.start(t); o.stop(t+0.75);
+      });
+    }
+  }catch(e){}
+}
+
+/* ---------- music ---------- */
+function updateMusic(){
+  let st = {playing:false, title:'', songs:0};
+  if (S){ try{ st = JSON.parse(S.musicStatus()); }catch(e){} }
+  $('playLbl').textContent = st.playing ? 'Pause' : 'Music';
+  $('playIcon').innerHTML = st.playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M7 5v14l12-7z"/>';
+  $('nextBtn').hidden = !st.playing;
+  $('song').textContent = st.playing ? '♪ ' + st.title : (st.songs ? '' : 'No music yet — add songs from a USB stick in Setup');
+  $('playBtn').hidden = !st.songs && !!S;
+}
+$('playBtn').addEventListener('click', () => {
+  if (!S) return;
+  let st = {}; try{ st = JSON.parse(S.musicStatus()); }catch(e){}
+  if (st.playing) S.musicPause(); else { S.musicVolume(cfg.volume/100); S.musicPlay(); }
+  setTimeout(updateMusic, 300);
+});
+$('nextBtn').addEventListener('click', () => { if(S){ S.musicNext(); setTimeout(updateMusic, 400); } });
+
+/* ---------- snap a photo ---------- */
+let stream = null, countT = null, shotData = '';
+async function openCam(){
+  if (active) return;
+  pauseLoop();
+  $('cam').hidden = false; showLive();
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920}, height:{ideal:1080}}, audio:false});
+    $('camVid').srcObject = stream;
+    $('camHint').innerHTML = 'Hold your build up to the camera <span class="zh">把作品举到摄像头前</span>';
+  }catch(e){
+    $('camHint').textContent = 'The camera is not available. Ask a teacher. 摄像头不能用，请找老师。';
+    $('camTake').hidden = true;
+  }
+}
+function showLive(){
+  $('camShot').hidden = true; $('camVid').hidden = false; $('camRowLive').hidden = false; $('camRowShot').hidden = true; $('camTake').hidden = false; $('camCount').textContent = '';
+}
+function closeCam(){
+  clearInterval(countT); countT = null;
+  if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  $('camVid').srcObject = null;
+  if (!$('cam').hidden){ $('cam').hidden = true; if (!active) resumeLoop(); }
+}
+$('snapBtn').addEventListener('click', openCam);
+$('camCancel').addEventListener('click', closeCam);
+$('camTake').addEventListener('click', () => {
+  if (countT) return;
+  let n = 3; $('camCount').textContent = n; $('camRowLive').hidden = true;
+  countT = setInterval(() => {
+    n--;
+    if (n > 0){ $('camCount').textContent = n; return; }
+    clearInterval(countT); countT = null; $('camCount').textContent = '';
+    const v = $('camVid'), w = v.videoWidth || 1280, h = v.videoHeight || 720;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); g.translate(w,0); g.scale(-1,1); g.drawImage(v,0,0,w,h);   // save it the way kids saw it on screen
+    shotData = c.toDataURL('image/jpeg', 0.85);
+    $('camShot').src = shotData; $('camShot').hidden = false; $('camVid').hidden = true; $('camRowShot').hidden = false;
+  }, 1000);
+});
+$('camAgain').addEventListener('click', showLive);
+$('camKeep').addEventListener('click', () => {
+  let name = '';
+  if (S && shotData){ try{ name = S.savePhoto(shotData); }catch(e){} }
+  closeCam();
+  refresh(); buildSeq();
+  // show the new photo first
+  if (name){ pos = Math.max(0, seq.findIndex(s => s.name === name)); }
+  step();
+});
+
+/* ---------- setup (hold the clock for 3 seconds) ---------- */
+let holdT = null;
+$('clock').addEventListener('pointerdown', () => { holdT = setTimeout(openSetup, 3000); });
+['pointerup','pointerleave','pointercancel'].forEach(ev => $('clock').addEventListener(ev, () => clearTimeout(holdT)));
+function openSetup(){ pauseLoop(); $('setup').hidden = false; renderSetup(); $('setup').scrollTop = 0; }
+$('closeSetup').addEventListener('click', () => { $('setup').hidden = true; refresh(); buildSeq(); pos = 0; resumeLoop(); });
+window.onBack = () => { if (!$('setup').hidden) $('closeSetup').click(); else if (!$('cam').hidden) closeCam(); };
+
+function armX(btn, go){
+  let armed = false, t = null;
+  btn.addEventListener('click', () => {
+    if (!armed){ armed = true; btn.classList.add('armed'); btn.textContent='?'; t = setTimeout(()=>{ armed=false; btn.classList.remove('armed'); btn.textContent='✕'; }, 3000); return; }
+    clearTimeout(t); go();
+  });
+}
+function renderSetup(){
+  // challenges
+  const cards = $('cards'); cards.replaceChildren();
+  CHALLENGES.forEach(c => {
+    const b = document.createElement('button'); b.type='button'; b.className = 'card' + (c.id===cfg.challenge?' on':'');
+    const en=document.createElement('b'); en.textContent=c.en; const zh=document.createElement('span'); zh.textContent=c.zh;
+    b.append(en, zh);
+    b.addEventListener('click', () => { cfg.challenge = c.id; save(); renderChallenge(); renderSetup(); });
+    cards.append(b);
+  });
+  // times
+  const times = $('times'); times.replaceChildren();
+  cfg.times.forEach(t => {
+    const r = document.createElement('div'); r.className='trow';
+    const b = document.createElement('b'); b.textContent = t.label;
+    const l1 = document.createElement('label'); l1.textContent='Clean-up starts';
+    const i1 = document.createElement('input'); i1.type='time'; i1.value=t.start; l1.append(i1);
+    const l2 = document.createElement('label'); l2.textContent='Line up at';
+    const i2 = document.createElement('input'); i2.type='time'; i2.value=t.end; l2.append(i2);
+    const l3 = document.createElement('label'); const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=t.on; l3.append(cb, document.createTextNode('On'));
+    const mins = document.createElement('span'); mins.className='small';
+    const showMins = () => { const m = Math.round((at(i2.value)-at(i1.value))/60000); mins.textContent = m>0 ? m+' minutes to clean up' : 'Line-up time must be after clean-up time'; };
+    const upd = () => { t.start=i1.value; t.end=i2.value; t.on=cb.checked; save(); showMins(); };
+    [i1,i2,cb].forEach(x => x.addEventListener('change', upd));
+    showMins();
+    r.append(b, l1, l2, l3, mins); times.append(r);
+  });
+  // photos
+  const th = $('thumbs'); th.replaceChildren();
+  if (!lib.photos.length){ const p=document.createElement('p'); p.className='hint'; p.textContent='No photos yet.'; th.append(p); }
+  lib.photos.forEach(p => {
+    const d=document.createElement('div'); d.className='th';
+    const im=document.createElement('img'); im.src=photoUrl(p.name); im.alt='';
+    const x=document.createElement('button'); x.type='button'; x.className='x'; x.textContent='✕'; x.setAttribute('aria-label','Remove photo');
+    armX(x, () => { S && S.remove('photos', p.name); refresh(); });
+    d.append(im,x); th.append(d);
+  });
+  // clips + music
+  [['clipList','clips','No clips yet.'],['musicList','music','No songs yet.']].forEach(([el,kind,empty]) => {
+    const box=$(el); box.replaceChildren();
+    if (!lib[kind].length){ const p=document.createElement('p'); p.className='hint'; p.textContent=empty; box.append(p); return; }
+    lib[kind].forEach(f => {
+      const r=document.createElement('div'); r.className='file';
+      const n=document.createElement('span'); n.className='n';
+      if (kind==='clips'){ const t=clipTitle(f.name); n.textContent = t.en + (t.zh ? '  ' + t.zh : '  (no Chinese title: rename the file to one from the list)'); }
+      else n.textContent = f.name.replace(/\.[^.]+$/,'');
+      const x=document.createElement('button'); x.type='button'; x.className='x'; x.textContent='✕'; x.setAttribute('aria-label','Remove');
+      armX(x, () => { S && S.remove(kind, f.name); refresh(); updateMusic(); });
+      r.append(n,x); box.append(r);
+    });
+  });
+  $('vol').value = cfg.volume; $('volVal').textContent = cfg.volume + '%';
+  $('ver').textContent = 'DREAMS Screen ' + (S ? S.version() : 'preview');
+}
+$('vol').addEventListener('input', e => { cfg.volume = +e.target.value; $('volVal').textContent = cfg.volume+'%'; save(); try{ S && S.musicVolume(cfg.volume/100); }catch(x){} });
+$('usbBtn').addEventListener('click', () => { $('usbMsg').className='msg'; $('usbMsg').textContent='Copying… keep the stick plugged in.'; S && S.copyFromUsb(); });
+$('usbPickBtn').addEventListener('click', () => { $('usbMsg').className='msg'; $('usbMsg').textContent='Pick the DREAMS Screen folder on the stick.'; S && S.chooseUsbFolder(); });
+window.onUsbDone = r => {
+  const m = $('usbMsg');
+  if (r.error){ m.className='msg err'; m.textContent = r.error==='cancelled' ? 'Nothing copied. Tap the orange button and pick the DREAMS Screen folder.' : 'Could not read the stick. Unplug it, plug it back in and try again.'; return; }
+  const parts = []; if (r.clips) parts.push(r.clips+' clip'+(r.clips>1?'s':'')); if (r.music) parts.push(r.music+' song'+(r.music>1?'s':'')); if (r.photos) parts.push(r.photos+' photo'+(r.photos>1?'s':''));
+  m.className='msg ok'; m.textContent = parts.length ? 'Copied ' + parts.join(', ') + '. You can unplug the stick now.' : 'Nothing new on the stick. Everything is already copied.';
+  refresh(); updateMusic();
+};
+window.onAppResume = () => { refresh(); updateMusic(); };
+
+/* ---------- start ---------- */
+refresh(); buildSeq(); step(); updateMusic();
+setInterval(tick, 1000); tick();
+setInterval(updateMusic, 5000);
+})();
+</script>
+</body>
+</html>
