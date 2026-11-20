@@ -9,7 +9,7 @@
    Bottom bar: Snap, music. Clean-up takes over the screen at set times.
    Setup: hold the clock (top left) for 3 seconds. System fonts only (works offline in China). */
 :root{
-  --bg:#14203A; --panel:#1E2D4F; --line:#34477A; --ink:#F8FAFC; --muted:#A9B6D3;
+  --bg:#2B0F54; --panel:#3D1D72; --line:#5B3896; --ink:#FAF7FF; --muted:#C9B8EC;
   --orange:#F97316; --zh:#FDE68A; --red:#EF4444; --green:#22C55E;
   --sans:Roboto,"Noto Sans CJK SC","Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
 }
@@ -46,21 +46,21 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .side-empty{border:3px dashed var(--line);border-radius:1.6vh;padding:4vh 2vw;color:var(--muted);font-size:1.8vw;font-weight:700;line-height:1.35}
 
 /* photo + clip */
-.media{background:#0B1222;align-items:center;justify-content:center}
-.media img,.media video{width:100%;height:100%;object-fit:contain;display:block;background:#0B1222}
-.cap{position:absolute;left:0;right:0;bottom:0;padding:2vh 3vw;background:linear-gradient(transparent,rgba(11,18,34,.92));display:flex;align-items:baseline;gap:1.2vw;font-weight:900;font-size:2.8vw}
+.media{background:#1A0838;align-items:center;justify-content:center}
+.media img,.media video{width:100%;height:100%;object-fit:contain;display:block;background:#1A0838}
+.cap{position:absolute;left:0;right:0;bottom:0;padding:2vh 3vw;background:linear-gradient(transparent,rgba(26,8,56,.92));display:flex;align-items:baseline;gap:1.2vw;font-weight:900;font-size:2.8vw}
 .cap .zh{font-size:.8em;font-weight:700}
 .cap .tag{margin-left:auto;font-size:.5em;color:var(--muted);font-weight:700}
-.cap.top{top:0;bottom:auto;background:linear-gradient(rgba(11,18,34,.92),transparent)}
+.cap.top{top:0;bottom:auto;background:linear-gradient(rgba(26,8,56,.92),transparent)}
 
 /* clock + pre-cleanup chip */
-.clock{position:absolute;top:1.6vh;left:1.6vw;z-index:6;font-size:1.8vw;font-weight:700;color:var(--muted);padding:.6vh 1vw;border-radius:1vh;background:rgba(20,32,58,.6)}
+.clock{position:absolute;top:1.6vh;left:1.6vw;z-index:6;font-size:1.8vw;font-weight:700;color:var(--muted);padding:.6vh 1vw;border-radius:1vh;background:rgba(43,15,84,.6)}
 .chip{position:absolute;top:1.6vh;right:1.6vw;z-index:6;background:var(--panel);border:3px solid var(--orange);border-radius:2vh;padding:1vh 1.6vw;text-align:right;line-height:1.05}
 .chip small{display:block;font-size:1.4vw;color:var(--muted);font-weight:700}
 .chip strong{font-size:4vw;color:var(--orange);font-variant-numeric:tabular-nums}
 
 /* bottom bar */
-.bar{position:absolute;left:0;right:0;bottom:0;height:9vh;background:#0F1930;border-top:1px solid var(--line);display:flex;align-items:center;gap:1.2vw;padding:0 1.6vw}
+.bar{position:absolute;left:0;right:0;bottom:0;height:9vh;background:#220B44;border-top:1px solid var(--line);display:flex;align-items:center;gap:1.2vw;padding:0 1.6vw}
 .bbtn{height:6.4vh;border-radius:1.4vh;border:2px solid var(--line);background:var(--panel);padding:0 1.6vw;font-size:2vw;font-weight:800;display:flex;align-items:center;gap:.8vw;white-space:nowrap}
 .bbtn .zh{font-weight:700;font-size:.85em}
 .bbtn.snap{background:var(--orange);border-color:var(--orange);color:#fff}
@@ -72,6 +72,11 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .next{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05;padding:0 .6vw;white-space:nowrap}
 .next small{font-size:1.2vw;color:var(--muted);font-weight:700}
 .next strong{font-size:3vw;font-weight:900;color:var(--orange);font-variant-numeric:tabular-nums}
+.next.soon{background:var(--orange);border-radius:1.2vh;padding:.4vh 1vw;animation:pulse 1s ease-in-out infinite alternate}
+.next.soon small,.next.soon strong{color:#fff}
+.next.soon strong{font-size:2.6vw}
+@keyframes pulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.next.soon{animation:none}}
 
 
 /* full-screen layers */
@@ -104,7 +109,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .big .zh{font-weight:700;margin-left:.6vw;color:inherit;opacity:.9}
 
 /* setup */
-.setup{position:absolute;inset:0;z-index:40;background:#0F1930;overflow:auto;padding:3vh 4vw 6vh;font-size:20px;-webkit-user-select:text;user-select:text}
+.setup{position:absolute;inset:0;z-index:40;background:#220B44;overflow:auto;padding:3vh 4vw 6vh;font-size:20px;-webkit-user-select:text;user-select:text}
 .setup h1{margin:0 0 1vh;font-size:34px}
 .setup h2{margin:28px 0 8px;font-size:26px;border-top:1px solid var(--line);padding-top:20px}
 .setup p.hint{color:var(--muted);margin:0 0 12px;font-size:18px;line-height:1.4}
@@ -117,12 +122,12 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .card{background:var(--panel);border:3px solid var(--line);border-radius:14px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px}
 .card b{font-size:21px}
 .card span{color:var(--zh);font-size:18px}
-.card.on{border-color:var(--orange);background:#2A2440}
+.card.on{border-color:var(--orange);background:#4A2560}
 .card.on::after{content:"Showing now ✓";color:var(--orange);font-weight:800;font-size:16px}
 .times{display:flex;flex-direction:column;gap:10px}
 .trow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--panel);border-radius:12px;padding:12px 16px}
 .trow b{min-width:140px}
-.trow input[type=time]{font:inherit;font-size:22px;background:#0F1930;color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:6px 10px;color-scheme:dark}
+.trow input[type=time]{font:inherit;font-size:22px;background:#220B44;color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:6px 10px;color-scheme:dark}
 .trow label{display:flex;align-items:center;gap:8px}
 .trow input[type=checkbox]{width:26px;height:26px}
 .msg{color:var(--muted);font-size:18px;margin-top:8px;min-height:1.2em}
@@ -447,7 +452,8 @@ function tick(){
     $('nextLbl').textContent = 'Clean-up at ' + up.t.start + ' 收拾时间';
     $('nextTime').textContent = left >= 3600 ? Math.floor(left/3600) + ':' + pad(Math.floor(left%3600/60)) + ':' + pad(left%60) : fmt(left);
   }
-  $('chip').hidden = !next;
+  $('chip').hidden = true;
+  $('next').classList.toggle('soon', !!next);
   if (next){ $('chipLbl').textContent = 'Clean-up at ' + next.t.start + ' 收拾时间'; $('chipTime').textContent = fmt(Math.ceil((next.s-now)/1000)); }
 
   if (active){
@@ -493,9 +499,9 @@ function chime(n){
     for (let i=0;i<n;i++){
       [784,1047].forEach((f,j) => {
         const o=actx.createOscillator(), g=actx.createGain(), t=t0+i*0.9+j*0.22;
-        o.type='sine'; o.frequency.value=f; o.connect(g); g.connect(actx.destination);
-        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.5,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.7);
-        o.start(t); o.stop(t+0.75);
+        o.type='triangle'; o.frequency.value=f; o.connect(g); g.connect(actx.destination);
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.9,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.9);
+        o.start(t); o.stop(t+0.95);
       });
     }
   }catch(e){}
