@@ -123,6 +123,11 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .card b{font-size:21px}
 .card span{color:var(--zh);font-size:18px}
 .card.on{border-color:var(--orange);background:#4A2560}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chipb{background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:8px 16px;font-size:18px;font-weight:700;display:flex;gap:8px;align-items:baseline}
+.chipb span{color:var(--zh);font-weight:500;font-size:16px}
+.chipb.on{background:var(--orange);border-color:var(--orange);color:#fff}
+.chipb.on span{color:#fff}
 .card.on::after{content:"Showing now ✓";color:var(--orange);font-weight:800;font-size:16px}
 .times{display:flex;flex-direction:column;gap:10px}
 .trow{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:var(--panel);border-radius:12px;padding:12px 16px}
@@ -230,6 +235,11 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <p class="hint">Tap one. It shows on the screen right away.</p>
   <div class="cards" id="cards"></div>
 
+  <h3 style="margin:22px 0 6px;font-size:22px">Ideas to try for this challenge</h3>
+  <p class="hint">Tap to add or remove (up to 4). The Chinese is already written.</p>
+  <div class="chips" id="ideaChips"></div>
+  <div class="top" style="margin-top:10px"><button class="btn" id="ideaReset" type="button">Use the usual ideas</button><span class="msg" id="ideaMsg"></span></div>
+
   <h2>2. Clean-up times (Monday to Friday)</h2>
   <p class="hint">At the clean-up time, the music stops and the screen shows the clean-up steps with a countdown to line-up time.</p>
   <div class="times" id="times"></div>
@@ -292,6 +302,26 @@ const CHALLENGES = [
    ideas:[['Cardboard','纸板'],['Tape','胶带'],['Your idea','你的想法']]}
 ];
 
+/* "Ideas to try" the TA can pick from (Chinese written in advance) */
+const IDEAS = [
+  ['Wheels','轮子'],['Axles','车轴'],['Tubes','纸筒'],['Ramps','斜坡'],['Cups','纸杯'],['Straws','吸管'],
+  ['Craft sticks','冰棍棒'],['Cardboard','纸板'],['Paper plates','纸盘'],['Boxes','盒子'],['Tape','胶带'],
+  ['Rubber bands','橡皮筋'],['String','绳子'],['Strings','拉线'],['Tie','绑'],['Brads','两脚钉'],['Slots','插口'],
+  ['Folds','折叠'],['Fold the paper','把纸折起来'],['Paper bands','纸带'],['Shapes','形状'],['Triangles','三角形'],
+  ['Wide bottom','宽底座'],['Arches','拱形'],['Supports','支柱'],['Sails','帆'],['Wings','翅膀'],
+  ['Parachute','降落伞'],['Spinner','旋转'],['Springs','弹簧'],['Weights','重物'],['Balance','平衡'],
+  ['Levers','杠杆'],['Magnets','磁铁'],['Clips','夹子'],['Pipe cleaners','扭扭棒'],['Felt','毛毡'],
+  ['Foam','泡沫'],['Bottle caps','瓶盖'],['Recycled stuff','回收材料'],['Door','门'],['Roof','屋顶'],['Bed','床'],
+  ['Draw a plan first','先画计划'],['Test it, then fix it','先测试再改进'],['Make it bigger','做大一点'],
+  ['Make it smaller','做小一点'],['Work with a friend','和朋友一起做'],['Your idea','你的想法']
+];
+const IDEA_ZH = Object.fromEntries(IDEAS);
+function ideasFor(c){
+  const own = (cfg.ideaPicks||{})[c.id];
+  if (Array.isArray(own)) return own.filter(en => IDEA_ZH[en] !== undefined).map(en => [en, IDEA_ZH[en]]);
+  return c.ideas;
+}
+
 /* how-to clip titles: name the video file with one of these and the Chinese appears */
 const CLIP_ZH = {
   'hot glue':'热熔胶','glue gun':'热熔胶枪','glue':'胶水','tape':'胶带','masking tape':'美纹纸胶带',
@@ -315,7 +345,7 @@ const DEFAULTS = {
     {id:'g2',  label:'Grade 2',   start:'11:52', end:'11:56', on:true},
     {id:'g35', label:'Grades 3–5', start:'12:23', end:'12:26', on:true}
   ],
-  photoSec:8, challengeSec:20, volume:50, skipped:{}, v:4
+  photoSec:8, challengeSec:20, volume:50, skipped:{}, ideaPicks:{}, v:4
 };
 let cfg = load();
 function load(){
@@ -346,7 +376,9 @@ function renderChallenge(){
   $('qEn').textContent = c.qEn; $('qZh').textContent = c.qZh;
   const box = $('ideas'); box.replaceChildren();
   const lab = document.createElement('div'); lab.className='ideas-label'; lab.textContent='Ideas to try 试试这些'; box.append(lab);
-  c.ideas.forEach(([en,zh]) => { const d=document.createElement('div'); d.className='idea';
+  const ideas = ideasFor(c);
+  lab.hidden = !ideas.length;
+  ideas.forEach(([en,zh]) => { const d=document.createElement('div'); d.className='idea';
     const b=document.createElement('b'); b.textContent=en; const s=document.createElement('span'); s.textContent=zh; d.append(b,s); box.append(d); });
   const side = $('side'); side.replaceChildren();
   const h = document.createElement('h3'); h.textContent='What you made'; const z=document.createElement('span'); z.className='zh'; z.textContent='你们的作品'; h.append(z); side.append(h);
@@ -633,6 +665,22 @@ function armX(btn, go){
 }
 function renderSetup(){
   // challenges
+  // ideas to try for the chosen challenge
+  const cur = current(), picked = ideasFor(cur).map(i => i[0]);
+  const chips = $('ideaChips'); chips.replaceChildren();
+  IDEAS.forEach(([en,zh]) => {
+    const b = document.createElement('button'); b.type='button'; b.className='chipb' + (picked.includes(en)?' on':'');
+    b.append(document.createTextNode(en)); const z=document.createElement('span'); z.textContent=zh; b.append(z);
+    b.addEventListener('click', () => {
+      let list = ideasFor(cur).map(i => i[0]);
+      if (list.includes(en)) list = list.filter(x => x !== en);
+      else if (list.length >= 4){ $('ideaMsg').className='msg err'; $('ideaMsg').textContent='Up to 4. Tap one to remove it first.'; return; }
+      else list.push(en);
+      cfg.ideaPicks = Object.assign({}, cfg.ideaPicks, {[cur.id]: list}); save();
+      $('ideaMsg').textContent=''; renderChallenge(); renderSetup();
+    });
+    chips.append(b);
+  });
   const cards = $('cards'); cards.replaceChildren();
   CHALLENGES.forEach(c => {
     const b = document.createElement('button'); b.type='button'; b.className = 'card' + (c.id===cfg.challenge?' on':'');
@@ -688,6 +736,10 @@ function renderSetup(){
 $('vol').addEventListener('input', e => { cfg.volume = +e.target.value; $('volVal').textContent = cfg.volume+'%'; save(); try{ S && S.musicVolume(cfg.volume/100); }catch(x){} });
 $('usbBtn').addEventListener('click', () => { $('usbMsg').className='msg'; $('usbMsg').textContent='Copying… keep the stick plugged in.'; S && S.copyFromUsb(); });
 $('usbPickBtn').addEventListener('click', () => { $('usbMsg').className='msg'; $('usbMsg').textContent='Pick the DREAMS Screen folder on the stick.'; S && S.chooseUsbFolder(); });
+$('ideaReset').addEventListener('click', () => {
+  const c = current(); const p = Object.assign({}, cfg.ideaPicks); delete p[c.id]; cfg.ideaPicks = p; save();
+  $('ideaMsg').className='msg ok'; $('ideaMsg').textContent='Back to the usual ideas.'; renderChallenge(); renderSetup();
+});
 window.onUsbDone = r => {
   const m = $('usbMsg');
   if (r.error){ m.className='msg err'; m.textContent = r.error==='cancelled' ? 'Nothing copied. Tap the orange button and pick the DREAMS Screen folder.' : 'Could not read the stick. Unplug it, plug it back in and try again.'; return; }

@@ -36,6 +36,8 @@ Change these in Setup any time.
 
 **Change the challenge:** Setup → **1. This week's challenge** → tap one. That's it.
 
+**Change the "Ideas to try":** Setup → under the challenges, **Ideas to try for this challenge** → tap ideas to add or remove them (up to 4). The Chinese is already there. **Use the usual ideas** puts the original ones back.
+
 **Add music, clips or photos from a USB stick:**
 1. On a computer or iPad, make a folder called **DREAMS Screen** on the USB stick.
 2. Put the files in it:
