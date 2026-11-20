@@ -7,7 +7,7 @@
 <style>
 /* One full-screen stage: challenge → kids' photos → one how-to clip, looping.
    Bottom bar: Snap, music. Clean-up takes over the screen at set times.
-   Setup: hold the clock (top left) for 3 seconds, hold ⚙ Setup (bottom right) for 2 seconds, or tap ⚙ Setup 5 times quickly. System fonts only (works offline in China). */
+   Setup: hold the clock (top left) for 3 seconds. System fonts only (works offline in China). */
 :root{
   --bg:#14203A; --panel:#1E2D4F; --line:#34477A; --ink:#F8FAFC; --muted:#A9B6D3;
   --orange:#F97316; --zh:#FDE68A; --red:#EF4444; --green:#22C55E;
@@ -72,10 +72,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .next{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05;padding:0 .6vw;white-space:nowrap}
 .next small{font-size:1.2vw;color:var(--muted);font-weight:700}
 .next strong{font-size:3vw;font-weight:900;color:var(--orange);font-variant-numeric:tabular-nums}
-.gear{position:relative;overflow:hidden;touch-action:none;-webkit-touch-callout:none;color:var(--muted);font-size:1.5vw;border-color:#26375f;background:transparent}
-.gear i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(249,115,22,.45);pointer-events:none}
-.gear.holding i{width:100%;transition:width 2s linear}
-.gear span{position:relative}
+
 
 /* full-screen layers */
 .layer{position:absolute;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;text-align:center;padding:3vh 3vw}
@@ -182,7 +179,6 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <div class="song" id="song"></div>
   <div class="next" id="next" hidden><small id="nextLbl">Clean-up at 11:52 收拾</small><strong id="nextTime">0:00</strong></div>
   <button class="bbtn clean" id="cleanNowBtn" type="button">Clean up now <span class="zh">收拾</span></button>
-  <button class="bbtn gear" id="gearBtn" type="button" aria-label="Setup: hold for 2 seconds"><i></i><span>⚙ Setup</span></button>
 </div>
 
 <!-- clean-up -->
@@ -311,17 +307,17 @@ function clipTitle(name){
 const DEFAULTS = {
   challenge:'roll',
   times:[
-    {id:'g2',  label:'Grade 2',   start:'11:51', end:'11:56', on:true},
-    {id:'g35', label:'Grades 3–5', start:'12:22', end:'12:26', on:true}
+    {id:'g2',  label:'Grade 2',   start:'11:52', end:'11:56', on:true},
+    {id:'g35', label:'Grades 3–5', start:'12:23', end:'12:26', on:true}
   ],
-  photoSec:8, challengeSec:20, volume:50, skipped:{}, v:3
+  photoSec:8, challengeSec:20, volume:50, skipped:{}, v:4
 };
 let cfg = load();
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem('dreamsScreen')||'null');
     if (s){
-      if (!s.v || s.v < 3){ s.times = JSON.parse(JSON.stringify(DEFAULTS.times)); s.v = 3; }  // new clean-up times (Nov 2026)
+      if (!s.v || s.v < 4){ s.times = JSON.parse(JSON.stringify(DEFAULTS.times)); s.v = 4; }  // new clean-up times (Nov 2026)
       return Object.assign({}, DEFAULTS, s);
     }
   }catch(e){}
@@ -610,27 +606,14 @@ $('camKeep').addEventListener('click', () => {
   step();
 });
 
-/* ---------- setup (hold ⚙ Setup for 2 seconds, or tap it 5 times) ---------- */
-const gear = $('gearBtn');
-let holdT = null, taps = [];
-const stopHold = () => { clearTimeout(holdT); gear.classList.remove('holding'); };
-gear.addEventListener('contextmenu', e => e.preventDefault());
-gear.addEventListener('pointerdown', e => {
-  try{ gear.setPointerCapture(e.pointerId); }catch(x){}
-  gear.classList.add('holding');
-  holdT = setTimeout(() => { stopHold(); openSetup(); }, 2000);
-});
-['pointerup','pointercancel','lostpointercapture'].forEach(ev => gear.addEventListener(ev, stopHold));
+/* ---------- setup (hold the clock for 3 seconds) ---------- */
 const clk = $('clock');
 let clkT = null;
 clk.style.touchAction = 'none';
 clk.addEventListener('contextmenu', e => e.preventDefault());
 clk.addEventListener('pointerdown', e => { try{ clk.setPointerCapture(e.pointerId); }catch(x){} clkT = setTimeout(openSetup, 3000); });
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev => clk.addEventListener(ev, () => clearTimeout(clkT)));
-gear.addEventListener('click', () => {
-  const now = Date.now(); taps = taps.filter(t => now - t < 2500); taps.push(now);
-  if (taps.length >= 5){ taps = []; openSetup(); }
-});
+
 function openSetup(){ pauseLoop(); $('setup').hidden = false; renderSetup(); $('setup').scrollTop = 0; }
 $('closeSetup').addEventListener('click', () => { $('setup').hidden = true; refresh(); buildSeq(); pos = 0; resumeLoop(); });
 window.onBack = () => { if (!$('setup').hidden) $('closeSetup').click(); else if (!$('cam').hidden) closeCam(); };

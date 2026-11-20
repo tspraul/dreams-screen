@@ -10,8 +10,8 @@ The big screen in the DREAMS Lab main studio. It runs on its own all day on the 
 
 | Group | Clean-up starts | Line up at |
 |---|---|---|
-| Grade 2 | 11:51 | 11:56 |
-| Grades 3–5 | 12:22 | 12:26 |
+| Grade 2 | 11:52 | 11:56 |
+| Grades 3–5 | 12:23 | 12:26 |
 
 Change these in Setup any time.
 
@@ -32,7 +32,7 @@ Change these in Setup any time.
 
 ## For the TA: looking after the screen
 
-**Open Setup:** press and hold the **clock** (top left) for 3 seconds, or hold **⚙ Setup** (bottom right) for 2 seconds until it fills orange, or tap ⚙ Setup 5 times quickly. Tap **Done** when finished.
+**Open Setup:** press and hold the **clock** (top left) for 3 seconds. Tap **Done** when finished.
 
 **Change the challenge:** Setup → **1. This week's challenge** → tap one. That's it.
 
