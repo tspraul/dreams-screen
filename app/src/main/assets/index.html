@@ -7,7 +7,7 @@
 <style>
 /* One full-screen stage: challenge → kids' photos → one how-to clip, looping.
    Bottom bar: Snap, music. Clean-up takes over the screen at set times.
-   Setup: hold the ⚙ Setup button (bottom right) for 2 seconds, or tap it 5 times quickly. System fonts only (works offline in China). */
+   Setup: hold the clock (top left) for 3 seconds, hold ⚙ Setup (bottom right) for 2 seconds, or tap ⚙ Setup 5 times quickly. System fonts only (works offline in China). */
 :root{
   --bg:#14203A; --panel:#1E2D4F; --line:#34477A; --ink:#F8FAFC; --muted:#A9B6D3;
   --orange:#F97316; --zh:#FDE68A; --red:#EF4444; --green:#22C55E;
@@ -311,14 +311,20 @@ function clipTitle(name){
 const DEFAULTS = {
   challenge:'roll',
   times:[
-    {id:'g2',  label:'Grade 2',   start:'11:52', end:'12:00', on:true},
-    {id:'g35', label:'Grades 3–5', start:'12:23', end:'12:30', on:true}
+    {id:'g2',  label:'Grade 2',   start:'11:49', end:'11:56', on:true},
+    {id:'g35', label:'Grades 3–5', start:'12:20', end:'12:26', on:true}
   ],
-  photoSec:8, challengeSec:20, volume:50, skipped:{}
+  photoSec:8, challengeSec:20, volume:50, skipped:{}, v:2
 };
 let cfg = load();
 function load(){
-  try{ const s = JSON.parse(localStorage.getItem('dreamsScreen')||'null'); if(s) return Object.assign({}, DEFAULTS, s); }catch(e){}
+  try{
+    const s = JSON.parse(localStorage.getItem('dreamsScreen')||'null');
+    if (s){
+      if (!s.v || s.v < 2){ s.times = JSON.parse(JSON.stringify(DEFAULTS.times)); s.v = 2; }  // new clean-up times (Nov 2026)
+      return Object.assign({}, DEFAULTS, s);
+    }
+  }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULTS));
 }
 function save(){ try{ localStorage.setItem('dreamsScreen', JSON.stringify(cfg)); }catch(e){} }
@@ -452,7 +458,7 @@ function tick(){
     const left = Math.ceil((active.end - now)/1000);
     if (left <= 0){
       $('clean').hidden = true; $('lineNow').hidden = false;
-      chime(3); lineUntil = now + 120000; active = null;
+      chime(3); lineUntil = now + 4*60000; active = null;
     } else {
       $('lineTime').textContent = fmt(left);
     }
@@ -479,7 +485,7 @@ function endClean(){
 function endLine(){ lineUntil = 0; $('lineNow').hidden = true; $('cleanNowBtn').hidden = false; resumeLoop(); }
 $('skipBtn').addEventListener('click', endClean);
 $('lineOkBtn').addEventListener('click', endLine);
-$('cleanNowBtn').addEventListener('click', () => startClean('manual', Date.now() + 7*60000, true));
+$('cleanNowBtn').addEventListener('click', () => startClean('manual', Date.now() + 6*60000, true));
 
 /* chime with WebAudio (no sound file needed) */
 let actx = null;
@@ -615,6 +621,12 @@ gear.addEventListener('pointerdown', e => {
   holdT = setTimeout(() => { stopHold(); openSetup(); }, 2000);
 });
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev => gear.addEventListener(ev, stopHold));
+const clk = $('clock');
+let clkT = null;
+clk.style.touchAction = 'none';
+clk.addEventListener('contextmenu', e => e.preventDefault());
+clk.addEventListener('pointerdown', e => { try{ clk.setPointerCapture(e.pointerId); }catch(x){} clkT = setTimeout(openSetup, 3000); });
+['pointerup','pointercancel','lostpointercapture'].forEach(ev => clk.addEventListener(ev, () => clearTimeout(clkT)));
 gear.addEventListener('click', () => {
   const now = Date.now(); taps = taps.filter(t => now - t < 2500); taps.push(now);
   if (taps.length >= 5){ taps = []; openSetup(); }

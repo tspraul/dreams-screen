@@ -6,12 +6,12 @@ The big screen in the DREAMS Lab main studio. It runs on its own all day on the 
 - **"Snap your build 拍作品"**: kids hold their project up to the MAXHUB camera and take a photo. Photos join the slideshow and delete themselves after 4 weeks.
 - **How-to clips**: short silent videos, one after each round of photos.
 - **Music** for making time, played from songs copied off a USB stick.
-- **Clean-up, automatically, Monday to Friday**: the music stops, the screen shows the 4 clean-up steps and counts down to line-up time, then shows "Line up now!".
+- **Clean-up, automatically, Monday to Friday**: the music stops, the screen shows the 4 clean-up steps and counts down to line-up time, then shows "Line up now!" for 4 minutes, until the half hour.
 
 | Group | Clean-up starts | Line up at |
 |---|---|---|
-| Grade 2 | 11:52 | 12:00 |
-| Grades 3–5 | 12:23 | 12:30 |
+| Grade 2 | 11:49 | 11:56 |
+| Grades 3–5 | 12:20 | 12:26 |
 
 Change these in Setup any time.
 
@@ -32,7 +32,7 @@ Change these in Setup any time.
 
 ## For the TA: looking after the screen
 
-**Open Setup:** press and hold **⚙ Setup** (bottom right) for 2 seconds until it fills orange, or tap it 5 times quickly. Tap **Done** when finished.
+**Open Setup:** press and hold the **clock** (top left) for 3 seconds, or hold **⚙ Setup** (bottom right) for 2 seconds until it fills orange, or tap ⚙ Setup 5 times quickly. Tap **Done** when finished.
 
 **Change the challenge:** Setup → **1. This week's challenge** → tap one. That's it.
 
@@ -50,7 +50,7 @@ Change these in Setup any time.
 
 **Clean-up screen when the room is empty** (for example, a grade 2 day with no grade 2s): tap **Teacher: hide 隐藏** in the bottom corner. It comes back tomorrow.
 
-**Clean up early:** tap **Clean up now 收拾** on the bottom bar (7-minute countdown).
+**Clean up early:** tap **Clean up now 收拾** on the bottom bar (6-minute countdown).
 
 ### Naming how-to clips
 
