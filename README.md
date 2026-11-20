@@ -32,7 +32,7 @@ Change these in Setup any time.
 
 ## For the TA: looking after the screen
 
-**Open Setup:** press and hold the **clock** in the top-left corner for 3 seconds. Tap **Done** when finished.
+**Open Setup:** press and hold **⚙ Setup** (bottom right) for 2 seconds until it fills orange, or tap it 5 times quickly. Tap **Done** when finished.
 
 **Change the challenge:** Setup → **1. This week's challenge** → tap one. That's it.
 

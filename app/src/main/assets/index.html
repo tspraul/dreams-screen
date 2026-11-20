@@ -7,7 +7,7 @@
 <style>
 /* One full-screen stage: challenge → kids' photos → one how-to clip, looping.
    Bottom bar: Snap, music. Clean-up takes over the screen at set times.
-   Setup opens by holding the clock (top left) for 3 seconds. System fonts only (works offline in China). */
+   Setup: hold the ⚙ Setup button (bottom right) for 2 seconds, or tap it 5 times quickly. System fonts only (works offline in China). */
 :root{
   --bg:#14203A; --panel:#1E2D4F; --line:#34477A; --ink:#F8FAFC; --muted:#A9B6D3;
   --orange:#F97316; --zh:#FDE68A; --red:#EF4444; --green:#22C55E;
@@ -68,6 +68,14 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .bbtn svg{width:3vh;height:3vh;flex:none}
 .song{flex:1;min-width:0;color:var(--muted);font-size:1.4vw;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bbtn.clean{border-color:var(--orange);color:#FDBA74}
+.bbtn{font-size:1.8vw}
+.next{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05;padding:0 .6vw;white-space:nowrap}
+.next small{font-size:1.2vw;color:var(--muted);font-weight:700}
+.next strong{font-size:3vw;font-weight:900;color:var(--orange);font-variant-numeric:tabular-nums}
+.gear{position:relative;overflow:hidden;touch-action:none;-webkit-touch-callout:none;color:var(--muted);font-size:1.5vw;border-color:#26375f;background:transparent}
+.gear i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(249,115,22,.45);pointer-events:none}
+.gear.holding i{width:100%;transition:width 2s linear}
+.gear span{position:relative}
 
 /* full-screen layers */
 .layer{position:absolute;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;text-align:center;padding:3vh 3vw}
@@ -172,7 +180,9 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <button class="bbtn" id="nextBtn" type="button" aria-label="Next song">
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 5v14l10-7zM16 5h3v14h-3z"/></svg></button>
   <div class="song" id="song"></div>
+  <div class="next" id="next" hidden><small id="nextLbl">Clean-up at 11:52 收拾</small><strong id="nextTime">0:00</strong></div>
   <button class="bbtn clean" id="cleanNowBtn" type="button">Clean up now <span class="zh">收拾</span></button>
+  <button class="bbtn gear" id="gearBtn" type="button" aria-label="Setup: hold for 2 seconds"><i></i><span>⚙ Setup</span></button>
 </div>
 
 <!-- clean-up -->
@@ -420,6 +430,21 @@ function tick(){
       if (s > now && s - now <= 180000 && (!next || s < next.s)) next = {s, t};
     }
   }
+  // always-on countdown in the bottom bar to the next clean-up today
+  let up = null;
+  if (!active && weekday){
+    for (const t of cfg.times){
+      if (!t.on || isSkipped(t.id)) continue;
+      const s = at(t.start);
+      if (s > now && (!up || s < up.s)) up = {s, t};
+    }
+  }
+  $('next').hidden = !up;
+  if (up){
+    const left = Math.ceil((up.s-now)/1000);
+    $('nextLbl').textContent = 'Clean-up at ' + up.t.start + ' 收拾时间';
+    $('nextTime').textContent = left >= 3600 ? Math.floor(left/3600) + ':' + pad(Math.floor(left%3600/60)) + ':' + pad(left%60) : fmt(left);
+  }
   $('chip').hidden = !next;
   if (next){ $('chipLbl').textContent = 'Clean-up at ' + next.t.start + ' 收拾时间'; $('chipTime').textContent = fmt(Math.ceil((next.s-now)/1000)); }
 
@@ -499,19 +524,55 @@ async function openCam(){
   pauseLoop();
   $('cam').hidden = false; showLive();
   try{
-    stream = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1920}, height:{ideal:1080}}, audio:false});
-    $('camVid').srcObject = stream;
+    await startStream();
     $('camHint').innerHTML = 'Hold your build up to the camera <span class="zh">把作品举到摄像头前</span>';
   }catch(e){
     $('camHint').textContent = 'The camera is not available. Ask a teacher. 摄像头不能用，请找老师。';
     $('camTake').hidden = true;
   }
 }
+/* Some panel cameras stop sending frames after a few seconds.
+   Watch the picture and restart the camera if it stops moving. */
+let watchT = null, lastT = -1, still = 0, restarts = 0, frames = 0;
+async function startStream(){
+  if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  const tries = [{video:{width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:15, max:30}}, audio:false}, {video:true, audio:false}];
+  let err = null;
+  for (const c of tries){
+    try{ stream = await navigator.mediaDevices.getUserMedia(c); break; }catch(e){ err = e; }
+  }
+  if (!stream) throw err || new Error('no camera');
+  const v = $('camVid'); v.srcObject = stream;
+  const p = v.play(); if (p && p.catch) p.catch(()=>{});
+  stream.getVideoTracks().forEach(t => { t.onended = () => { if (!$('cam').hidden) restartCam(); }; });
+  // count real frames (the video clock can keep running on a frozen camera)
+  frames = 0; lastT = -1; still = 0;
+  if (v.requestVideoFrameCallback){
+    const onFrame = () => { frames++; if (v.srcObject === stream) v.requestVideoFrameCallback(onFrame); };
+    v.requestVideoFrameCallback(onFrame);
+  }
+  clearInterval(watchT);
+  watchT = setInterval(() => {
+    if ($('cam').hidden || $('camVid').hidden || !stream) return;
+    const track = stream.getVideoTracks()[0];
+    const dead = !track || track.readyState === 'ended' || track.muted;
+    const count = v.requestVideoFrameCallback ? frames : v.currentTime;
+    if (dead || count === lastT) still++; else { still = 0; restarts = 0; }
+    lastT = count;
+    if (still >= 2) restartCam();
+  }, 1000);
+}
+async function restartCam(){
+  still = 0;
+  if (restarts >= 4){ $('camHint').textContent = 'The camera stopped. Tap Cancel, then Snap again. 摄像头停了，请取消后再试。'; return; }
+  restarts++;
+  try{ await startStream(); }catch(e){}
+}
 function showLive(){
   $('camShot').hidden = true; $('camVid').hidden = false; $('camRowLive').hidden = false; $('camRowShot').hidden = true; $('camTake').hidden = false; $('camCount').textContent = '';
 }
 function closeCam(){
-  clearInterval(countT); countT = null;
+  clearInterval(countT); countT = null; clearInterval(watchT); watchT = null; restarts = 0;
   if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
   $('camVid').srcObject = null;
   if (!$('cam').hidden){ $('cam').hidden = true; if (!active) resumeLoop(); }
@@ -543,10 +604,21 @@ $('camKeep').addEventListener('click', () => {
   step();
 });
 
-/* ---------- setup (hold the clock for 3 seconds) ---------- */
-let holdT = null;
-$('clock').addEventListener('pointerdown', () => { holdT = setTimeout(openSetup, 3000); });
-['pointerup','pointerleave','pointercancel'].forEach(ev => $('clock').addEventListener(ev, () => clearTimeout(holdT)));
+/* ---------- setup (hold ⚙ Setup for 2 seconds, or tap it 5 times) ---------- */
+const gear = $('gearBtn');
+let holdT = null, taps = [];
+const stopHold = () => { clearTimeout(holdT); gear.classList.remove('holding'); };
+gear.addEventListener('contextmenu', e => e.preventDefault());
+gear.addEventListener('pointerdown', e => {
+  try{ gear.setPointerCapture(e.pointerId); }catch(x){}
+  gear.classList.add('holding');
+  holdT = setTimeout(() => { stopHold(); openSetup(); }, 2000);
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev => gear.addEventListener(ev, stopHold));
+gear.addEventListener('click', () => {
+  const now = Date.now(); taps = taps.filter(t => now - t < 2500); taps.push(now);
+  if (taps.length >= 5){ taps = []; openSetup(); }
+});
 function openSetup(){ pauseLoop(); $('setup').hidden = false; renderSetup(); $('setup').scrollTop = 0; }
 $('closeSetup').addEventListener('click', () => { $('setup').hidden = true; refresh(); buildSeq(); pos = 0; resumeLoop(); });
 window.onBack = () => { if (!$('setup').hidden) $('closeSetup').click(); else if (!$('cam').hidden) closeCam(); };
