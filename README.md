@@ -10,8 +10,8 @@ The big screen in the DREAMS Lab main studio. It runs on its own all day on the 
 
 | Group | Clean-up starts | Line up at |
 |---|---|---|
-| Grade 2 | 11:49 | 11:56 |
-| Grades 3–5 | 12:20 | 12:26 |
+| Grade 2 | 11:51 | 11:56 |
+| Grades 3–5 | 12:22 | 12:26 |
 
 Change these in Setup any time.
 

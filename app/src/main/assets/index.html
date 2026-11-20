@@ -311,17 +311,17 @@ function clipTitle(name){
 const DEFAULTS = {
   challenge:'roll',
   times:[
-    {id:'g2',  label:'Grade 2',   start:'11:49', end:'11:56', on:true},
-    {id:'g35', label:'Grades 3–5', start:'12:20', end:'12:26', on:true}
+    {id:'g2',  label:'Grade 2',   start:'11:51', end:'11:56', on:true},
+    {id:'g35', label:'Grades 3–5', start:'12:22', end:'12:26', on:true}
   ],
-  photoSec:8, challengeSec:20, volume:50, skipped:{}, v:2
+  photoSec:8, challengeSec:20, volume:50, skipped:{}, v:3
 };
 let cfg = load();
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem('dreamsScreen')||'null');
     if (s){
-      if (!s.v || s.v < 2){ s.times = JSON.parse(JSON.stringify(DEFAULTS.times)); s.v = 2; }  // new clean-up times (Nov 2026)
+      if (!s.v || s.v < 3){ s.times = JSON.parse(JSON.stringify(DEFAULTS.times)); s.v = 3; }  // new clean-up times (Nov 2026)
       return Object.assign({}, DEFAULTS, s);
     }
   }catch(e){}
