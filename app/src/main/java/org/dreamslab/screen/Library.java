@@ -117,6 +117,8 @@ final class Library {
         if (mime.startsWith("image/") || n.matches(".*\\.(jpe?g|png|webp|gif)$")) return "photos";
         if (mime.startsWith("video/") || n.matches(".*\\.(mp4|m4v|webm|mov|3gp)$")) return "clips";
         if (mime.startsWith("audio/") || n.matches(".*\\.(mp3|m4a|aac|ogg|wav|flac)$")) return "music";
+        // a .txt next to a video holds that clip's steps
+        if (n.endsWith(".txt")) return "clips";
         return null;
     }
 
@@ -134,6 +136,7 @@ final class Library {
         if (n.endsWith(".m4a") || n.endsWith(".aac")) return "audio/mp4";
         if (n.endsWith(".ogg")) return "audio/ogg";
         if (n.endsWith(".wav")) return "audio/wav";
+        if (n.endsWith(".txt")) return "text/plain";
         if (n.endsWith(".html")) return "text/html";
         if (n.endsWith(".js")) return "text/javascript";
         if (n.endsWith(".css")) return "text/css";
@@ -200,7 +203,7 @@ final class Library {
             if (dest.exists()) dest.delete();
             if (tmp.renameTo(dest)) {
                 if (kind.equals("photos")) r.photos++;
-                else if (kind.equals("clips")) r.clips++;
+                else if (kind.equals("clips")) { if (!name.toLowerCase(Locale.ROOT).endsWith(".txt")) r.clips++; }
                 else r.music++;
             } else {
                 tmp.delete();

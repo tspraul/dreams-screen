@@ -51,7 +51,16 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .cap{position:absolute;left:0;right:0;bottom:0;padding:2vh 3vw;background:linear-gradient(transparent,rgba(26,8,56,.92));display:flex;align-items:baseline;gap:1.2vw;font-weight:900;font-size:2.8vw}
 .cap .zh{font-size:.8em;font-weight:700}
 .cap .tag{margin-left:auto;font-size:.5em;color:var(--muted);font-weight:700}
-.cap.top{top:0;bottom:auto;background:linear-gradient(rgba(26,8,56,.92),transparent)}
+.cap.top{top:0;bottom:auto;padding-left:10vw;background:linear-gradient(rgba(26,8,56,.92),transparent)}
+#sClip.has-steps video{width:64%}
+#sClip.has-steps .cap.top{right:36%}
+.clip-steps{position:absolute;top:0;right:0;bottom:0;width:36%;background:var(--panel);padding:4vh 2vw;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:2vh;counter-reset:st}
+.clip-steps:empty{display:none}
+.cs{display:flex;gap:1vw;align-items:flex-start}
+.cs::before{counter-increment:st;content:counter(st);flex:none;width:4.2vh;height:4.2vh;border-radius:50%;background:var(--orange);color:#fff;font-weight:900;font-size:2.4vh;display:flex;align-items:center;justify-content:center}
+.cs div{display:flex;flex-direction:column;line-height:1.15}
+.cs b{font-size:2.3vw;font-weight:800}
+.cs span{font-size:1.7vw;color:var(--zh);font-weight:700}
 
 /* clock + pre-cleanup chip */
 .clock{position:absolute;top:1.6vh;left:1.6vw;z-index:6;font-size:1.8vw;font-weight:700;color:var(--muted);padding:.6vh 1vw;border-radius:1vh;background:rgba(43,15,84,.6)}
@@ -171,6 +180,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <div class="slide media" id="sClip">
     <video id="clipVid" muted playsinline preload="auto"></video>
     <div class="cap top"><span>How to</span><span id="clipEn"></span><span class="zh" id="clipZh"></span></div>
+    <div class="clip-steps" id="clipSteps"></div>
   </div>
 </div>
 
@@ -326,7 +336,7 @@ function ideasFor(c){
 const CLIP_ZH = {
   'hot glue':'热熔胶','glue gun':'热熔胶枪','glue':'胶水','tape':'胶带','masking tape':'美纹纸胶带',
   'ways to join':'连接方法','slot':'插口','slots':'插口','brad':'两脚钉','brads':'两脚钉','staple':'订书钉','stapler':'订书机',
-  'tie':'绑','scissors':'剪刀','cutting cardboard':'剪纸板','cardboard':'纸板','cardboard cutter':'纸板刀',
+  'tie':'绑','scissors':'剪刀','cutting cardboard':'剪纸板','cardboard':'纸板','cardboard cutter':'纸板刀','canary cutter':'纸板刀',
   'saw':'锯子','drill':'电钻','hammer':'锤子','sandpaper':'砂纸','screwdriver':'螺丝刀',
   'sewing':'缝纫','needle and thread':'针和线','clean up':'收拾','save your project':'保存作品','save it':'保存作品',
   'bee-bot':'小蜜蜂机器人','dash':'Dash机器人','robots':'机器人','circuits':'电路','led':'LED灯','coin cell':'纽扣电池',
@@ -336,6 +346,46 @@ function clipTitle(name){
   const base = name.replace(/\.[^.]+$/,'').replace(/^[\d\s._-]+/,'').replace(/[_]+/g,' ').trim();
   const zh = CLIP_ZH[base.toLowerCase()] || '';
   return {en: base.charAt(0).toUpperCase() + base.slice(1), zh};
+}
+
+/* steps shown beside a clip: built in for the DREAMS Lab's own clips (match by file name),
+   or from a .txt file with the same name next to the video ("English | 中文", one step per line) */
+const CLIP_STEPS = {
+  'hot glue':[['Glue gun on its mat.','热熔胶枪放在垫子上'],['Hold the handle, tip down.','握住手柄，枪头朝下'],['A small dot of glue.','只挤一小点胶'],['Press and count to 10.','压住，数到10'],['Back on the mat.','放回垫子上']],
+  'cardboard cutter':[['Cardboard on a cutting mat.','纸板放在切割垫上'],['Other hand away from the line.','另一只手远离切割线'],['Short sawing strokes.','小幅度来回锯'],['Turn the cardboard on curves.','转弯时转动纸板'],['Cap back on.','盖上刀盖']],
+  'ways to join':[['Tape on both sides.','两边都贴胶带'],['Slots push together.','插口对插'],['Brads let it turn.','两脚钉能转动'],['Staples for thin things.','订书钉钉薄的东西'],['Tie it to undo later.','绑起来以后能拆开']],
+  'slot':[['Cut a slit halfway into each piece.','每块剪一个到一半的口子'],['Push them together.','把它们插在一起'],['It stands. No tape!','能站住，不用胶带！']],
+  'brad':[['Poke a hole through both.','两层一起戳个洞'],['Push the brad through.','插入两脚钉'],['Open the legs flat.','把两脚分开压平'],['Now it turns!','现在能转动了！']],
+  'strong shapes':[['A square squashes.','正方形会被压扁'],['Add a diagonal stick.','加一根斜杆'],['Triangles stay strong.','三角形很坚固']],
+  'save your project':[['Name and class on a tag.','在标签上写名字和班级'],['Tape it on.','把标签贴上'],['Tray on the save shelf.','放到保存架的托盘里']],
+  'clean up':[['Not done? Save it.','没做完？保存起来'],['Tools back.','工具放回原位'],['Trash in the bin.','垃圾扔进垃圾桶'],['Sweep the table.','用刷子扫干净桌子']]
+};
+CLIP_STEPS['canary cutter'] = CLIP_STEPS['cardboard cutter'];
+const VIDEO_RE = /\.(mp4|m4v|webm|mov|3gp)$/i;
+const baseOf = n => n.replace(/\.[^.]+$/,'');
+const noteFor = name => (lib.notes||[]).find(f => baseOf(f.name).toLowerCase() === baseOf(name).toLowerCase());
+const stepCache = {};
+async function stepsFor(name){
+  const own = CLIP_STEPS[clipTitle(name).en.toLowerCase()];
+  if (own) return own;
+  const note = noteFor(name);
+  if (!note) return [];
+  const key = note.name + ':' + note.time;
+  if (stepCache[key]) return stepCache[key];
+  try{
+    const txt = await (await fetch(clipUrl(note.name))).text();
+    const steps = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean).slice(0, 6)
+      .map(l => { const [en, zh] = l.split('|'); return [en.trim(), (zh||'').trim()]; });
+    return (stepCache[key] = steps);
+  }catch(e){ return []; }
+}
+async function showSteps(name){
+  const box = $('clipSteps'); box.replaceChildren();
+  const steps = await stepsFor(name);
+  steps.forEach(([en, zh]) => { const d=document.createElement('div'); d.className='cs'; const w=document.createElement('div');
+    const b=document.createElement('b'); b.textContent=en; w.append(b); if (zh){ const z=document.createElement('span'); z.textContent=zh; w.append(z); }
+    d.append(w); box.append(d); });
+  $('sClip').classList.toggle('has-steps', steps.length > 0);
 }
 
 /* ---------- settings (kept on this screen) ---------- */
@@ -364,6 +414,9 @@ function save(){ try{ localStorage.setItem('dreamsScreen', JSON.stringify(cfg));
 let lib = {photos:[], clips:[], music:[]};
 function refresh(){
   if (S) { try{ lib = JSON.parse(S.list()); }catch(e){} }
+  const all = lib.clips || [];
+  lib.notes = all.filter(f => /\.txt$/i.test(f.name));
+  lib.clips = all.filter(f => VIDEO_RE.test(f.name));
   renderChallenge();
   if (!$('setup').hidden) renderSetup();
 }
@@ -425,6 +478,7 @@ function step(){
   } else {
     const t = clipTitle(it.name);
     $('clipEn').textContent = t.en; $('clipZh').textContent = t.zh;
+    showSteps(it.name);
     vid.onended = () => { clearTimeout(loopT); step(); };
     vid.onerror = () => { clearTimeout(loopT); step(); };
     vid.src = clipUrl(it.name);
@@ -723,10 +777,10 @@ function renderSetup(){
     lib[kind].forEach(f => {
       const r=document.createElement('div'); r.className='file';
       const n=document.createElement('span'); n.className='n';
-      if (kind==='clips'){ const t=clipTitle(f.name); n.textContent = t.en + (t.zh ? '  ' + t.zh : '  (no Chinese title: rename the file to one from the list)'); }
+      if (kind==='clips'){ const t=clipTitle(f.name); const has = CLIP_STEPS[t.en.toLowerCase()] || noteFor(f.name); n.textContent = t.en + (t.zh ? '  ' + t.zh : '') + (has ? '  · steps shown' : ''); }
       else n.textContent = f.name.replace(/\.[^.]+$/,'');
       const x=document.createElement('button'); x.type='button'; x.className='x'; x.textContent='✕'; x.setAttribute('aria-label','Remove');
-      armX(x, () => { S && S.remove(kind, f.name); refresh(); updateMusic(); });
+      armX(x, () => { if (S){ S.remove(kind, f.name); const nt = kind==='clips' && noteFor(f.name); if (nt) S.remove('clips', nt.name); } refresh(); updateMusic(); });
       r.append(n,x); box.append(r);
     });
   });

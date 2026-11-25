@@ -62,6 +62,18 @@ Hot glue · Glue gun · Glue · Tape · Masking tape · Ways to join · Slot · 
 
 Example: `Hot glue.mp4` shows **How to: Hot glue 热熔胶**.
 
+**Steps beside the video.** The DREAMS Lab's own clips show their steps in English and Chinese next to the video, matched by file name: Hot glue, Cardboard cutter (or Canary cutter), Ways to join, Slot, Brad, Strong shapes, Save your project, Clean up.
+
+Any other video can bring its own steps: put a text file with the **same name** next to it on the USB stick (for example `Robots.mp4` and `Robots.txt`). One step per line, up to 6. Add Chinese after a `|` if you have it:
+
+```
+Pick a robot | 选一个机器人
+Press the buttons
+Try a new path | 试一条新路线
+```
+
+A video with no steps plays full screen with just its title.
+
 **Making a clip:** film on the iPad, 15 to 60 seconds, hands only, no talking needed (clips play muted). One skill per clip.
 
 ### Music
