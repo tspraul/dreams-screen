@@ -36,6 +36,18 @@ Change these in Setup any time.
 
 **Change the challenge:** Setup → **1. This week's challenge** → tap one. That's it.
 
+**Online challenge list (O365 sheet).** Everyone edits one Excel sheet in OneDrive/SharePoint; every screen picks up the changes within 15 minutes.
+1. Upload `DREAMS Screen Challenges.xlsx` to OneDrive. Keep the **Challenges** tab first and don't rename its column headers.
+2. Share → **Anyone with the link** → **Can view** → copy the link.
+3. On each screen: Setup → **Online challenge list** → paste the link → **Save link**. The status line says how many challenges it read.
+- Once read, the sheet's challenges **replace** the 11 built-in ones (they're already in the sheet, so you can edit or hide them too).
+- **Show on screen** = No hides a row. Only **Challenge (English)** is required; the Chinese columns are optional.
+- **Ideas**: pick from the drop-down (the screen adds the Chinese) or type your own in English, or `English | 中文`.
+- No internet? The screen keeps using the last copy it read.
+- "The link asks for a sign-in" means the link isn't an "Anyone" link: your school account may not allow those, so ask IT.
+
+**Add a challenge on one screen.** Setup → **Add a challenge on this screen** → type it in English (Chinese optional) → **Add challenge**. It's only on that screen. Remove it with ✕ (tap twice).
+
 **Change the "Ideas to try":** Setup → under the challenges, **Ideas to try for this challenge** → tap ideas to add or remove them (up to 4). The Chinese is already there. **Use the usual ideas** puts the original ones back.
 
 **Add music, clips or photos from a USB stick:**

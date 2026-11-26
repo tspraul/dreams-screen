@@ -133,6 +133,14 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .card span{color:var(--zh);font-size:18px}
 .card.on{border-color:var(--orange);background:#4A2560}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
+.setup input[type=text]{font:inherit;font-size:20px;background:#220B44;color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;box-sizing:border-box;width:100%}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;max-width:1100px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:16px;color:var(--muted);font-weight:700}
+.linkrow{display:flex;gap:10px;align-items:center;max-width:1300px}
+.linkrow input{flex:1}
+.card{position:relative}
+.card small{font-size:14px;color:var(--muted);font-weight:700}
+.card .x{top:8px;right:8px}
 .chipb{background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:8px 16px;font-size:18px;font-weight:700;display:flex;gap:8px;align-items:baseline}
 .chipb span{color:var(--zh);font-weight:500;font-size:16px}
 .chipb.on{background:var(--orange);border-color:var(--orange);color:#fff}
@@ -245,6 +253,21 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <p class="hint">Tap one. It shows on the screen right away.</p>
   <div class="cards" id="cards"></div>
 
+  <h3 style="margin:22px 0 6px;font-size:22px">Online challenge list (O365 sheet)</h3>
+  <p class="hint">Paste the sheet's view-only "Anyone with the link" share link once. The screen checks the sheet every 15 minutes and uses its challenges instead of the built-in ones. Without internet it keeps the last copy.</p>
+  <div class="linkrow"><input type="text" id="sheetUrl" placeholder="https://… share link" autocomplete="off"><button class="btn primary" id="sheetSave" type="button">Save link</button><button class="btn" id="sheetCheck" type="button">Check now</button></div>
+  <div class="msg" id="sheetMsg"></div>
+
+  <h3 style="margin:22px 0 6px;font-size:22px">Add a challenge on this screen</h3>
+  <p class="hint">Only for this screen. To add one for every screen, put it in the online sheet. Chinese is optional: leave it blank and the challenge shows in English.</p>
+  <div class="form">
+    <label>Challenge (English)<input type="text" id="addEn" placeholder="Build a bridge for a toy car."></label>
+    <label>挑战（中文）optional<input type="text" id="addZh"></label>
+    <label>Question (English)<input type="text" id="addQEn" placeholder="How much can it hold?"></label>
+    <label>问题（中文）optional<input type="text" id="addQZh"></label>
+  </div>
+  <div class="top" style="margin-top:10px"><button class="btn primary" id="addBtn" type="button">Add challenge</button><span class="msg" id="addMsg"></span></div>
+
   <h3 style="margin:22px 0 6px;font-size:22px">Ideas to try for this challenge</h3>
   <p class="hint">Tap to add or remove (up to 4). The Chinese is already written.</p>
   <div class="chips" id="ideaChips"></div>
@@ -344,7 +367,7 @@ const media = kind => name => 'https://dreams.local/media/' + kind + '/' + encod
 const photoUrl = media('photos'), clipUrl = media('clips');
 
 /* ---------- challenges (English + Chinese written in advance) ---------- */
-const CHALLENGES = [
+const BUILTIN = [
   {id:'roll',  en:'Build something that rolls.', zh:'做一个会滚的东西', qEn:'How far can it go?', qZh:'它能滚多远？',
    ideas:[['Wheels','轮子'],['Tubes','纸筒'],['Ramps','斜坡']]},
   {id:'tower', en:'Build the tallest tower you can.', zh:'搭一座最高的塔', qEn:'Can it stand by itself?', qZh:'它能自己站稳吗？',
@@ -452,7 +475,7 @@ const DEFAULTS = {
     {id:'g2',  label:'Grade 2',   start:'11:52', end:'11:56', on:true},
     {id:'g35', label:'Grades 3–5', start:'12:23', end:'12:26', on:true}
   ],
-  photoSec:8, challengeSec:20, volume:50, skipped:{}, ideaPicks:{}, v:4
+  photoSec:8, challengeSec:20, volume:50, skipped:{}, ideaPicks:{}, custom:[], sheetUrl:'', v:4
 };
 let cfg = load();
 function load(){
@@ -479,7 +502,64 @@ function refresh(){
 }
 
 /* ---------- challenge slide ---------- */
-function current(){ return CHALLENGES.find(c => c.id === cfg.challenge) || CHALLENGES[0]; }
+function current(){ const all = allChallenges(); return all.find(c => c.id === cfg.challenge) || all[0]; }
+
+/* ---------- where challenges come from: online sheet (replaces built-ins) + added on this screen ---------- */
+let online = null, sheetInfo = null;
+try{ const c = JSON.parse(localStorage.getItem('dreamsSheet')||'null'); if (c && c.list){ online = c.list; sheetInfo = c; } }catch(e){}
+function allChallenges(){ return ((online && online.length) ? online : BUILTIN).concat(cfg.custom || []); }
+function slug(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60); }
+function ideaFromText(t){
+  if (t.indexOf('|') >= 0){ const parts = t.split('|'); return [parts[0].trim(), parts[1].trim()]; }
+  const m = IDEAS.find(x => x[0].toLowerCase() === t.toLowerCase());
+  return m ? m : [t, ''];
+}
+/* columns are found by their header words, so their order in the sheet doesn't matter */
+function parseSheet(rows){
+  if (!rows || !rows.length) return null;
+  const head = rows[0].map(h => String(h).toLowerCase());
+  const col = function(){ const keys = Array.prototype.slice.call(arguments); return head.findIndex(h => keys.every(k => h.indexOf(k) >= 0)); };
+  const cShow = col('show'), cEn = col('challenge','english'), cZh = col('challenge','chinese'), qEn = col('question','english'), qZh = col('question','chinese');
+  const ideaCols = []; head.forEach((h,i) => { if (h.indexOf('idea') === 0) ideaCols.push(i); });
+  if (cEn < 0) return null;
+  const out = [], seen = {};
+  rows.slice(1).forEach(row => {
+    const g = i => (i >= 0 && row[i] != null) ? String(row[i]).trim() : '';
+    const en = g(cEn);
+    if (!en) return;
+    if (cShow >= 0 && /^(no|n|false|0|否|hide)$/i.test(g(cShow))) return;
+    let id = 'web:' + slug(en); while (seen[id]) id += '-2'; seen[id] = 1;
+    out.push({id, en, zh:g(cZh), qEn:g(qEn), qZh:g(qZh), ideas: ideaCols.map(g).filter(Boolean).slice(0,4).map(ideaFromText), from:'online'});
+  });
+  return out;
+}
+function sheetStatus(text, kind){ const m = $('sheetMsg'); if (!m) return; m.className = 'msg' + (kind ? ' ' + kind : ''); m.textContent = text; }
+function timeText(t){ const d = new Date(t); return d.getMonth()+1 + '/' + d.getDate() + ' ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function showSheetInfo(){
+  if (!cfg.sheetUrl) sheetStatus('No online list yet. The 11 built-in challenges are showing.');
+  else if (sheetInfo) sheetStatus('Online list: ' + sheetInfo.list.length + ' challenges · last updated ' + timeText(sheetInfo.time), 'ok');
+  else sheetStatus('Link saved. Not read yet.');
+}
+function checkSheet(){
+  if (!cfg.sheetUrl || !S || typeof S.fetchSheet !== 'function') return;
+  sheetStatus('Checking the online list…');
+  S.fetchSheet(cfg.sheetUrl);
+}
+window.onSheet = function(r){
+  if (!r || !r.ok){
+    const why = {signin:'The link asks for a sign-in. In the sheet, choose Share → "Anyone with the link" → "Can view", and copy that link.',
+                 offline:'No internet right now.', download:'Could not download the sheet. Check the link.', read:'Could not read the sheet. Is it an Excel file?'}[r && r.error] || 'Could not read the sheet.';
+    sheetStatus(why + (sheetInfo ? ' Using the copy from ' + timeText(sheetInfo.time) + '.' : ' Using the built-in challenges.'), 'err');
+    return;
+  }
+  const list = parseSheet(r.rows);
+  if (list === null){ sheetStatus('That sheet has no "Challenge (English)" column. Use the DREAMS template.', 'err'); return; }
+  online = list; sheetInfo = {list, time: Date.now()};
+  try{ localStorage.setItem('dreamsSheet', JSON.stringify(sheetInfo)); }catch(e){}
+  showSheetInfo();
+  renderChallenge();
+  if (!$('setup').hidden) renderSetup();
+};
 function renderChallenge(){
   const c = current();
   $('tEn').textContent = c.en; $('tZh').textContent = c.zh;
@@ -793,11 +873,19 @@ function renderSetup(){
     chips.append(b);
   });
   const cards = $('cards'); cards.replaceChildren();
-  CHALLENGES.forEach(c => {
+  allChallenges().forEach(c => {
     const b = document.createElement('button'); b.type='button'; b.className = 'card' + (c.id===cfg.challenge?' on':'');
-    const en=document.createElement('b'); en.textContent=c.en; const zh=document.createElement('span'); zh.textContent=c.zh;
+    const en=document.createElement('b'); en.textContent=c.en; const zh=document.createElement('span'); zh.textContent=c.zh || '(no Chinese yet)';
     b.append(en, zh);
+    if (c.from){ const sm=document.createElement('small'); sm.textContent = c.from === 'online' ? 'From the online list' : 'Added on this screen'; b.append(sm); }
     b.addEventListener('click', () => { cfg.challenge = c.id; save(); renderChallenge(); renderSetup(); });
+    if (c.from === 'screen'){
+      const x=document.createElement('span'); x.className='x'; x.setAttribute('role','button'); x.setAttribute('aria-label','Remove this challenge'); x.textContent='✕';
+      x.style.cssText='display:flex;align-items:center;justify-content:center;position:absolute';
+      armX(x, () => { cfg.custom = (cfg.custom||[]).filter(k => k.id !== c.id); save(); renderChallenge(); renderSetup(); });
+      x.addEventListener('click', e => e.stopPropagation());
+      b.append(x);
+    }
     cards.append(b);
   });
   // times
@@ -841,6 +929,8 @@ function renderSetup(){
       r.append(n,x); box.append(r);
     });
   });
+  if (document.activeElement !== $('sheetUrl')) $('sheetUrl').value = cfg.sheetUrl || '';
+  showSheetInfo();
   $('vol').value = cfg.volume; $('volVal').textContent = cfg.volume + '%';
   $('ver').textContent = 'DREAMS Screen ' + (S ? S.version() : 'preview') + ' · viewer ' + window.DREAMS_CHROME + (window.DREAMS_FLEXGAP ? '' : ' (old)');
 }
@@ -859,10 +949,29 @@ window.onUsbDone = r => {
   refresh(); updateMusic();
 };
 window.onAppResume = () => { refresh(); updateMusic(); };
+$('sheetSave').addEventListener('click', () => {
+  const v = $('sheetUrl').value.trim();
+  if (v && !/^https:\/\//i.test(v)){ sheetStatus('The link should start with https://', 'err'); return; }
+  cfg.sheetUrl = v; save();
+  if (!v){ online = null; sheetInfo = null; try{ localStorage.removeItem('dreamsSheet'); }catch(e){} showSheetInfo(); renderChallenge(); renderSetup(); return; }
+  checkSheet();
+});
+$('sheetCheck').addEventListener('click', checkSheet);
+$('addBtn').addEventListener('click', () => {
+  const en = $('addEn').value.trim();
+  if (!en){ $('addMsg').className='msg err'; $('addMsg').textContent='Type the challenge in English first.'; return; }
+  const c = {id:'my:' + Date.now(), en, zh:$('addZh').value.trim(), qEn:$('addQEn').value.trim(), qZh:$('addQZh').value.trim(),
+             ideas:[['Your idea','你的想法']], from:'screen'};
+  cfg.custom = (cfg.custom||[]).concat([c]); cfg.challenge = c.id; save();
+  ['addEn','addZh','addQEn','addQZh'].forEach(id => { $(id).value=''; });
+  $('addMsg').className='msg ok'; $('addMsg').textContent='Added and showing now. Pick its "Ideas to try" above.';
+  renderChallenge(); renderSetup();
+});
 
 /* ---------- start ---------- */
 refresh(); buildSeq(); step(); updateMusic();
 setInterval(tick, 1000); tick();
+checkSheet(); setInterval(checkSheet, 15*60*1000);
 setInterval(updateMusic, 5000);
 })();
 </script>

@@ -316,6 +316,14 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void musicVolume(float v) { music.setVolume(v); }
         @JavascriptInterface public String musicStatus() { return music.statusJson(); }
 
+        /** Downloads the online challenge list; answers with window.onSheet({...}). */
+        @JavascriptInterface public void fetchSheet(final String link) {
+            new Thread(new Runnable() { @Override public void run() {
+                String json = Sheet.fetchJson(link == null ? "" : link);
+                js("window.onSheet && window.onSheet(" + json + ")");
+            }}).start();
+        }
+
         @JavascriptInterface public String version() {
             try {
                 return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
