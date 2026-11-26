@@ -19,8 +19,8 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family
 button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .zh{color:var(--zh)}
 
-.stage{position:absolute;inset:0 0 9vh 0;overflow:hidden}
-.slide{position:absolute;inset:0;opacity:0;transition:opacity .8s;display:flex}
+.stage{position:absolute;top:0;right:0;bottom:9vh;left:0;overflow:hidden}
+.slide{position:absolute;top:0;right:0;bottom:0;left:0;opacity:0;transition:opacity .8s;display:flex}
 .slide.on{opacity:1}
 
 /* challenge */
@@ -89,7 +89,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 
 
 /* full-screen layers */
-.layer{position:absolute;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;text-align:center;padding:3vh 3vw}
+.layer{position:absolute;top:0;right:0;bottom:0;left:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;text-align:center;padding:3vh 3vw}
 .clean h2{margin:0;font-size:8vw;line-height:.9;font-weight:900;color:var(--orange)}
 .clean .zh2{font-size:4vw;font-weight:700;color:var(--zh)}
 .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.4vw;width:92vw;margin-top:1vh}
@@ -106,7 +106,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 
 /* snap */
 .cam{background:#000;gap:0;padding:0}
-.cam video,.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.cam video,.cam img{position:absolute;top:0;right:0;bottom:0;left:0;width:100%;height:100%;object-fit:contain;background:#000}
 .cam video{transform:scaleX(-1)}
 .cam .count{position:relative;z-index:2;font-size:22vw;font-weight:900;color:#fff;text-shadow:0 0 4vh rgba(0,0,0,.6)}
 .cam .hintc{position:absolute;top:3vh;left:0;right:0;z-index:2;font-size:2.6vw;font-weight:800;text-shadow:0 0 2vh #000}
@@ -118,7 +118,7 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
 .big .zh{font-weight:700;margin-left:.6vw;color:inherit;opacity:.9}
 
 /* setup */
-.setup{position:absolute;inset:0;z-index:40;background:#220B44;overflow:auto;padding:3vh 4vw 6vh;font-size:20px;-webkit-user-select:text;user-select:text}
+.setup{position:absolute;top:0;right:0;bottom:0;left:0;z-index:40;background:#220B44;overflow:auto;padding:3vh 4vw 6vh;font-size:20px;-webkit-user-select:text;user-select:text}
 .setup h1{margin:0 0 1vh;font-size:34px}
 .setup h2{margin:28px 0 8px;font-size:26px;border-top:1px solid var(--line);padding-top:20px}
 .setup p.hint{color:var(--muted);margin:0 0 12px;font-size:18px;line-height:1.4}
@@ -278,6 +278,63 @@ button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:tra
   <p class="small" style="margin-top:28px" id="ver"></p>
 </div>
 
+<script>
+/* Older TV web viewers: report problems on screen, and fill in missing features. Plain old JavaScript on purpose. */
+(function(){
+  var ua = navigator.userAgent, m = ua.match(/Chrome\/(\d+)/);
+  window.DREAMS_CHROME = m ? m[1] : '?';
+  window.onerror = function(msg, src, line){
+    var c = document.getElementById('clock');
+    if (c){ c.textContent = 'Error: ' + msg + ' (line ' + line + ', viewer ' + window.DREAMS_CHROME + ')'; c.style.fontSize = '14px'; c.style.color = '#FCA5A5'; c.style.maxWidth = '60vw'; }
+  };
+  if (!Element.prototype.replaceChildren){
+    Element.prototype.replaceChildren = function(){
+      while (this.firstChild) this.removeChild(this.firstChild);
+      for (var i = 0; i < arguments.length; i++){ var a = arguments[i]; this.appendChild(typeof a === 'string' ? document.createTextNode(a) : a); }
+    };
+  }
+  if (!Object.fromEntries){
+    Object.fromEntries = function(list){ var o = {}; for (var i = 0; i < list.length; i++) o[list[i][0]] = list[i][1]; return o; };
+  }
+  if (!String.prototype.padStart){
+    String.prototype.padStart = function(n, ch){ var s = String(this); ch = ch || ' '; while (s.length < n) s = ch + s; return s; };
+  }
+  /* flex "gap" only works in newer viewers: if missing, copy each flex box's gap onto its children's margins */
+  var t = document.createElement('div');
+  t.style.cssText = 'display:flex;flex-direction:column;row-gap:1px;position:absolute;visibility:hidden';
+  t.appendChild(document.createElement('div')); t.appendChild(document.createElement('div'));
+  document.documentElement.appendChild(t);
+  var hasGap = t.scrollHeight === 1;
+  t.parentNode.removeChild(t);
+  window.DREAMS_FLEXGAP = hasGap;
+  if (hasGap) return;
+  function fix(){
+    var all = document.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++){
+      var el = all[i], cs = getComputedStyle(el);
+      if (cs.display !== 'flex' && cs.display !== 'inline-flex') continue;
+      var col = cs.flexDirection.indexOf('column') === 0;
+      var g = parseFloat(col ? (cs.rowGap || cs.gridRowGap) : (cs.columnGap || cs.gridColumnGap)) || 0;
+      var g2 = parseFloat(cs.rowGap || cs.gridRowGap) || 0;
+      if (!g && !g2) continue;
+      var first = true;
+      for (var k = 0; k < el.children.length; k++){
+        var ch = el.children[k];
+        if (getComputedStyle(ch).position === 'absolute') continue;
+        if (col){ ch.style.marginTop = first ? '' : g + 'px'; }
+        else { ch.style.marginLeft = first ? '' : g + 'px'; if (cs.flexWrap === 'wrap' && g2) ch.style.marginBottom = g2 + 'px'; }
+        first = false;
+      }
+    }
+  }
+  var pending = false;
+  function soon(){ if (pending) return; pending = true; setTimeout(function(){ pending = false; fix(); }, 50); }
+  document.addEventListener('DOMContentLoaded', function(){
+    fix();
+    new MutationObserver(soon).observe(document.body, {childList: true, subtree: true});
+  });
+})();
+</script>
 <script>
 (() => {
 'use strict';
@@ -785,7 +842,7 @@ function renderSetup(){
     });
   });
   $('vol').value = cfg.volume; $('volVal').textContent = cfg.volume + '%';
-  $('ver').textContent = 'DREAMS Screen ' + (S ? S.version() : 'preview');
+  $('ver').textContent = 'DREAMS Screen ' + (S ? S.version() : 'preview') + ' · viewer ' + window.DREAMS_CHROME + (window.DREAMS_FLEXGAP ? '' : ' (old)');
 }
 $('vol').addEventListener('input', e => { cfg.volume = +e.target.value; $('volVal').textContent = cfg.volume+'%'; save(); try{ S && S.musicVolume(cfg.volume/100); }catch(x){} });
 $('usbBtn').addEventListener('click', () => { $('usbMsg').className='msg'; $('usbMsg').textContent='Copying… keep the stick plugged in.'; S && S.copyFromUsb(); });
